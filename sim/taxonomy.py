@@ -141,7 +141,23 @@ def _e(
     )
 
 
-ALL_METHODS = (Method.CARD, Method.UPI, Method.NETBANKING, Method.WALLET)
+ALL_METHODS = (Method.CARD, Method.UPI, Method.NETBANKING, Method.WALLET, Method.EMANDATE)
+"""Rails a reason can appear on when it is method-agnostic.
+
+EMANDATE belongs here: a recurring debit fails for insufficient funds, bank
+technical errors and risk blocks exactly like a one-off payment does. Leaving it
+out was a real bug -- it made `funds_blocked_by_mandate` the only funds-related
+reason reachable for subscriptions, which pushed an exotic error to 7% of the
+whole batch and buried the actual subscription killers.
+
+The exception is the checkout-session reasons (`payment_cancelled`,
+`payment_timed_out`, `payment_session_expired`): a mandate debit is silent and
+server-initiated, so there is no session for the customer to abandon. Those
+carry explicit method tuples below.
+"""
+
+CHECKOUT_METHODS = (Method.CARD, Method.UPI, Method.NETBANKING, Method.WALLET)
+"""Rails where a human is present at a checkout and can drop out."""
 _BR = ErrorClass.BAD_REQUEST
 _GW = ErrorClass.GATEWAY
 _RC = RecoveryClass
@@ -450,7 +466,7 @@ _DEAD_INSTRUMENT = [
         _RC.SWITCH_RAIL,
         _BR,
         (Source.CUSTOMER, Source.ISSUER_BANK),
-        (Method.CARD,),
+        (Method.CARD, Method.EMANDATE),
         0.55,
     ),
     _e(
@@ -461,7 +477,7 @@ _DEAD_INSTRUMENT = [
         _RC.SWITCH_RAIL,
         _GW,
         (Source.ISSUER_BANK,),
-        (Method.CARD,),
+        (Method.CARD, Method.EMANDATE),
         0.52,
     ),
     _e(
@@ -641,7 +657,7 @@ _DROPPED = [
         _RC.NUDGE_CUSTOMER,
         _GW,
         (Source.CUSTOMER,),
-        ALL_METHODS,
+        CHECKOUT_METHODS,
         0.41,
     ),
     _e(
@@ -652,7 +668,7 @@ _DROPPED = [
         _RC.NUDGE_CUSTOMER,
         _GW,
         (Source.CUSTOMER, Source.GATEWAY),
-        ALL_METHODS,
+        CHECKOUT_METHODS,
         0.62,
     ),
     _e(
@@ -662,7 +678,7 @@ _DROPPED = [
         _RC.NUDGE_CUSTOMER,
         _GW,
         (Source.CUSTOMER,),
-        ALL_METHODS,
+        CHECKOUT_METHODS,
         0.67,
     ),
     _e(
@@ -954,6 +970,68 @@ NEVER_RETRY_REASONS: frozenset[str] = frozenset(
 """Consumed by agent/policy.py as a hard veto list. Deliberately derived from the
 taxonomy rather than hand-listed, so a new HARD_STOP reason is guarded the moment
 it is added."""
+
+
+# Relative frequency of each reason *within its recovery class*.
+#
+# OUR ASSUMPTION (Tier 3), but a load-bearing one. Sampling uniformly within a
+# class -- which is what we did first -- put `funds_blocked_by_mandate` as the
+# second most common failure in the batch, which is nonsense: it is an exotic
+# error, and `insufficient_funds` is the workhorse decline of Indian payments.
+# Uniform sampling also inflated the held-out share to 16%, quietly making the
+# benchmark far easier for an LLM and far harder for the rules engine than
+# reality would.
+#
+# Ordering here is defensible from how Indian payments actually fail; the exact
+# weights are not, and eval/sensitivity.py varies them.
+#
+# Anything unlisted defaults to 1.0 (rare).
+PREVALENCE: dict[str, float] = {
+    # The giants. Insufficient funds and auth drop-off dominate every real
+    # merchant's failure stream.
+    "insufficient_funds": 34.0,
+    "authentication_failed": 22.0,
+    "payment_timed_out": 14.0,
+    "payment_cancelled": 12.0,
+    "incorrect_otp": 8.0,
+    "payment_declined": 9.0,
+    "card_declined": 8.0,
+    # Common infrastructure faults.
+    "bank_technical_error": 11.0,
+    "bank_not_available": 8.0,
+    "gateway_technical_error": 6.0,
+    "upi_app_technical_error": 7.0,
+    "issuer_technical_error": 4.0,
+    "server_error": 2.5,
+    # Common instrument problems.
+    "card_expired": 7.0,
+    "debit_instrument_blocked": 4.0,
+    "invalid_vpa": 5.0,
+    "transaction_daily_limit_exceeded": 5.0,
+    "transaction_limit_exceeded": 3.5,
+    "incorrect_pin": 4.5,
+    "incorrect_cvv": 3.0,
+    "otp_expired": 3.0,
+    "payment_session_expired": 3.0,
+    "payment_collect_request_expired": 4.0,
+    "psp_app_not_available": 3.0,
+    "vpa_resolution_failed": 2.5,
+    "bank_cutoff_in_progress": 2.0,
+    "transaction_frequency_limit_exceeded": 2.0,
+    # Risk and compliance: individually rare, collectively material.
+    "payment_risk_check_failed": 9.0,
+    "international_transaction_not_allowed": 2.0,
+    "compliance_violation": 1.5,
+    # Integration bugs: bursty in reality, but not common.
+    "input_validation_failed": 4.0,
+    "invalid_order_id": 2.5,
+    "order_already_paid": 2.5,
+    "payment_method_not_enabled": 2.0,
+}
+
+
+def prevalence(reason: str) -> float:
+    return PREVALENCE.get(reason, 1.0)
 
 
 def by_class(rc: RecoveryClass) -> tuple[ErrorReason, ...]:
