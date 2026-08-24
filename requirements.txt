@@ -1,0 +1,6 @@
+# Core. The simulator, agent, guardrails and evaluation need only these.
+pydantic>=2.0
+pytest>=8.0
+
+# Optional: the Anthropic backend. Ollama needs nothing (stdlib urllib).
+# pip install anthropic
