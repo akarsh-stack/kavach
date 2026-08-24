@@ -102,6 +102,8 @@ CASES = [
 
 
 def main() -> int:
+    import anthropic
+
     try:
         client = AnthropicClient()
     except LLMUnavailable as exc:
@@ -116,6 +118,21 @@ def main() -> int:
         print(f"    {obs.reason}")
         try:
             d = client.complete(SYSTEM_PROMPT, build_user_message(obs), Decision)
+        except anthropic.AuthenticationError:
+            # The common case, and it deserves a readable message rather than a
+            # stack trace: a key is present but the API rejected it.
+            key = __import__("os").environ.get("ANTHROPIC_API_KEY", "")
+            shown = f"{key[:7]}... ({len(key)} chars)" if key else "(unset)"
+            print("    FAIL: 401 invalid x-api-key\n")
+            print(f"    ANTHROPIC_API_KEY is {shown}")
+            print("    Anthropic keys start with 'sk-ant-'. This one does not, so it")
+            print("    belongs to a different service. Everything downstream will run")
+            print("    on StubClient until a real key is set -- and stub output is NOT")
+            print("    a model result. See docs/OPEN_ISSUES.md.")
+            return 1
+        except anthropic.APIStatusError as exc:
+            print(f"    FAIL: HTTP {exc.status_code} — {str(exc)[:160]}\n")
+            return 1
         except LLMUnavailable as exc:
             print(f"    FAIL: {exc}\n")
             continue
