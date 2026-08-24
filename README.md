@@ -34,7 +34,7 @@ pip install pydantic pytest
 python scripts/inspect_batch.py        # generate a batch, verify its calibration
 python scripts/run_eval.py --no-llm    # compare the credential-free policies
 python scripts/run_sensitivity.py      # does the conclusion survive our assumptions?
-python -m pytest tests/ -q             # 20 tests, including the boundary proof
+python -m pytest tests/ -q             # 32 tests, including the boundary proof
 ```
 
 The dashboard:
@@ -89,7 +89,7 @@ Full grid and reasoning: [`docs/CALIBRATION.md` §5.4.1](docs/CALIBRATION.md).
 ## Why you can believe the numbers
 
 Every simulated benchmark faces the same objection: *you wrote the simulator and
-the agent, so of course the agent wins*. Usually that objection is correct. Four
+the agent, so of course the agent wins*. Usually that objection is correct. Five
 things are in place so that it is not.
 
 ### 1. The failure taxonomy is real, not invented
