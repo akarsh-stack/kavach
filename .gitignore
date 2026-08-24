@@ -7,3 +7,6 @@ venv/
 node_modules/
 dist/
 .vite/
+
+# Scratch runs from the dashboard. The committed result is reference.json.
+data/runs/latest.json

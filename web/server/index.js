@@ -31,8 +31,17 @@ app.use(express.json());
 
 const readRun = (name) => {
   const file = path.join(RUNS, `${name}.json`);
-  if (!fs.existsSync(file)) return null;
-  return JSON.parse(fs.readFileSync(file, "utf-8"));
+  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf-8"));
+
+  // `latest` is a scratch artifact -- gitignored, and overwritten by any run
+  // triggered from the dashboard. `reference` is the committed result the repo
+  // ships. Falling back means a fresh clone shows real numbers immediately,
+  // and a stub run started from the UI can never clobber the citable one.
+  if (name === "latest") {
+    const ref = path.join(RUNS, "reference.json");
+    if (fs.existsSync(ref)) return JSON.parse(fs.readFileSync(ref, "utf-8"));
+  }
+  return null;
 };
 
 app.get("/api/health", (_req, res) => {
