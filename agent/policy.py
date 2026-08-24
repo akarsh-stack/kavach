@@ -56,6 +56,9 @@ class Proposal:
     channel: Channel | None = None
     rationale: str = ""
     confidence: float = 0.5
+    diagnosed_class: str = ""
+    """Root cause the decision layer settled on. Carried through untouched so
+    the report can score diagnosis separately from plan quality."""
 
 
 @dataclass(frozen=True)
@@ -71,6 +74,13 @@ class Ruling:
     proposed_action: Action
     """Kept even when unchanged, so the audit trail can show the model's
     intent alongside the outcome."""
+
+    # Passed through from the proposal untouched. The policy layer rules on
+    # actions, not diagnoses -- but the audit trail needs both to explain why a
+    # decision was made and why it was or was not allowed to stand.
+    diagnosed_class: str = ""
+    confidence: float = 0.0
+    rationale: str = ""
 
     @property
     def blocked(self) -> bool:
@@ -142,6 +152,11 @@ class PolicyEngine:
         self.spent_paise = 0
         self.escalations_used = 0
         self.veto_counts: dict[str, int] = {}
+        self.reported_bugs: set[str] = set()
+        """Integration faults already raised with engineering this batch.
+        A single bad deploy produces the same `invalid_order_id` on hundreds of
+        payments; filing hundreds of tickets for it is not diligence, it is
+        noise. The first one is escalated and the rest reference it."""
 
     # -- the gate ---------------------------------------------------------
 
@@ -171,6 +186,9 @@ class PolicyEngine:
             rule="",
             explanation="within all limits",
             proposed_action=proposal.action,
+            diagnosed_class=proposal.diagnosed_class,
+            confidence=proposal.confidence,
+            rationale=proposal.rationale,
         )
 
     # -- rules, highest priority first -------------------------------------
@@ -202,6 +220,9 @@ class PolicyEngine:
                 f"is prohibited regardless of expected value; routed to risk review."
             ),
             proposed_action=p.action,
+            diagnosed_class=p.diagnosed_class,
+            confidence=p.confidence,
+            rationale=p.rationale,
         )
 
     def _r2_merchant_bug(self, obs: Observation, p: Proposal) -> Ruling | None:
@@ -215,6 +236,22 @@ class PolicyEngine:
             return None
         if documented_class(obs.reason) != "merchant_fix":
             return None
+        if obs.reason in self.reported_bugs:
+            return Ruling(
+                verdict=Verdict.VETO,
+                action=Action.STOP,
+                at=p.at,
+                channel=None,
+                rule="R2_BUG_ALREADY_REPORTED",
+                explanation=(
+                    f"'{obs.reason}' is already open with engineering this batch. "
+                    f"Stopping rather than filing a duplicate."
+                ),
+                proposed_action=p.action,
+                diagnosed_class=p.diagnosed_class,
+                confidence=p.confidence,
+                rationale=p.rationale,
+            )
         return Ruling(
             verdict=Verdict.VETO,
             action=Action.ESCALATE,
@@ -226,6 +263,9 @@ class PolicyEngine:
                 f"action can resolve it; routed to engineering."
             ),
             proposed_action=p.action,
+            diagnosed_class=p.diagnosed_class,
+            confidence=p.confidence,
+            rationale=p.rationale,
         )
 
     def _r3_attempt_cap(self, obs: Observation, p: Proposal) -> Ruling | None:
@@ -244,6 +284,9 @@ class PolicyEngine:
                 f"(cap {self.limits.max_attempts_per_payment}); stopping."
             ),
             proposed_action=p.action,
+            diagnosed_class=p.diagnosed_class,
+            confidence=p.confidence,
+            rationale=p.rationale,
         )
 
     def _r4_contact_caps(self, obs: Observation, p: Proposal) -> Ruling | None:
@@ -300,6 +343,9 @@ class PolicyEngine:
                 f"({self.spent_paise / 100:,.0f} of {self.batch_budget_paise / 100:,.0f} Rs spent)."
             ),
             proposed_action=p.action,
+            diagnosed_class=p.diagnosed_class,
+            confidence=p.confidence,
+            rationale=p.rationale,
         )
 
     def _r6_uneconomic(self, obs: Observation, p: Proposal) -> Ruling | None:
@@ -325,6 +371,9 @@ class PolicyEngine:
                 f"payment, above the {self.limits.max_spend_ratio:.0%} ceiling."
             ),
             proposed_action=p.action,
+            diagnosed_class=p.diagnosed_class,
+            confidence=p.confidence,
+            rationale=p.rationale,
         )
 
     def _r7_escalation_capacity(self, obs: Observation, p: Proposal) -> Ruling | None:
@@ -344,6 +393,9 @@ class PolicyEngine:
                 f"({self.escalations_used}/{self.limits.max_escalations})."
             ),
             proposed_action=p.action,
+            diagnosed_class=p.diagnosed_class,
+            confidence=p.confidence,
+            rationale=p.rationale,
         )
 
     def _r8_quiet_hours(self, obs: Observation, p: Proposal) -> Ruling | None:
@@ -369,6 +421,9 @@ class PolicyEngine:
                 f"deferred to {moved:%d %b %H:%M}."
             ),
             proposed_action=p.action,
+            diagnosed_class=p.diagnosed_class,
+            confidence=p.confidence,
+            rationale=p.rationale,
         )
 
     # -- bookkeeping -------------------------------------------------------

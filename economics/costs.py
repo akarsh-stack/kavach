@@ -81,6 +81,29 @@ class CostModel:
     """Cost of losing a customer outright. ASSUMED, roughly one year of margin
     for a mid-size D2C merchant. Charged when over-contacting causes churn."""
 
+    compliance_exposure_paise: int = 15000
+    """Rs 150 per re-presentment of a risk, fraud or compliance decline.
+    ASSUMED, and the most consequential assumption in this file.
+
+    It exists because without it the model reaches an absurd conclusion. Direct
+    costs alone say that retrying a fraud block three times costs Rs 1.50 while
+    routing it to a human costs Rs 45 -- so ignoring the risk layer is thirty
+    times cheaper than respecting it. That is exactly backwards, and it is
+    backwards because we were pricing what escalation *costs* without pricing
+    what it *avoids*.
+
+    The real exposure is genuine: card networks levy per-attempt fees on
+    merchants with excessive retry ratios, and systematically re-presenting
+    risk-declined transactions is what triggers an acquirer's MID review. The
+    tail of that distribution is a frozen merchant account, which is not a
+    Rs 150 event.
+
+    We cannot source a defensible point estimate, so we do not pretend to. The
+    ledger tracks this separately from direct costs, the report shows net BOTH
+    ways, and evaluation/sensitivity.py sweeps it. If the case for guardrails
+    only holds at one particular value, we would rather show that than bury it.
+    """
+
     def action_cost(self, action: Action, channel: Channel | None = None) -> int:
         """Direct cost of taking one action, before outcomes."""
         if action == Action.RETRY:
@@ -124,6 +147,8 @@ class Ledger:
     escalation_cost_paise: int = 0
     annoyance_cost_paise: int = 0
     churn_cost_paise: int = 0
+    compliance_exposure_paise: int = 0
+    """Kept out of spend_paise() so direct and regulatory costs stay separable."""
 
     retries: int = 0
     switches: int = 0
@@ -148,9 +173,18 @@ class Ledger:
             + self.churn_cost_paise
         )
 
-    def net_paise(self) -> int:
-        """The headline. Gross, minus MDR, minus every cost of chasing it."""
+    def net_direct_paise(self) -> int:
+        """Net of money actually spent. Excludes regulatory exposure.
+
+        Reported alongside the headline because it is the number a merchant
+        running a naive retry loop would see on their own P&L -- and it is why
+        so many of them run one.
+        """
         return self.gross_recovered_paise - self.mdr_paise - self.spend_paise()
+
+    def net_paise(self) -> int:
+        """The headline. Direct costs plus the compliance exposure incurred."""
+        return self.net_direct_paise() - self.compliance_exposure_paise
 
     def record_action(
         self,

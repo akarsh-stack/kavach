@@ -179,6 +179,12 @@ def generate_batch(
 
     cust_ids = sorted(pop.customers.keys())
     failures: list[FailureEvent] = []
+    # The merchant's own payment records. Not hidden state -- every merchant
+    # has their own transaction history, and the agent is entitled to it.
+    # Recorded here because the failures alone lose the successes, and "has
+    # this customer paid us six times before" is exactly the context that
+    # separates a good recovery decision from a guess.
+    history: dict[str, list[tuple[datetime, bool, int]]] = {}
     n_success = 0
     cause_counts: dict[str, int] = {}
     outage_linked = 0
@@ -207,8 +213,10 @@ def generate_batch(
         td = issuer.base_td + (psp.base_failure if psp else 0.0)
 
         p_fail = min(0.95, td + bd + boost)
+        amount = _amount_paise(draw, cust.is_subscription, i)
         if draw.u01("fail", i) >= p_fail:
             n_success += 1
+            history.setdefault(cust.id, []).append((t, True, amount))
             continue
 
         in_outage = boost > 0.0 and draw.u01("outsrc", i) < boost / p_fail
@@ -244,7 +252,7 @@ def generate_batch(
         event = FailureEvent(
             payment_id=pid,
             customer_id=cust.id,
-            amount_paise=_amount_paise(draw, cust.is_subscription, i),
+            amount_paise=amount,
             method=method,
             issuer=issuer.code,
             psp=psp.code if psp else None,
@@ -265,6 +273,7 @@ def generate_batch(
         )
         world.register(event, truth)
         failures.append(event)
+        history.setdefault(cust.id, []).append((t, False, amount))
 
     failures.sort(key=lambda e: e.failed_at)
 
@@ -281,6 +290,9 @@ def generate_batch(
         "total_value_rupees": world.total_value_paise() / 100.0,
         "recoverable_value_rupees": world.recoverable_value_paise() / 100.0,
     }
+    for h in history.values():
+        h.sort(key=lambda r: r[0])
+    stats["customer_history"] = history
     return world, failures, stats
 
 

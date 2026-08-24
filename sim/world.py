@@ -296,6 +296,22 @@ class World:
 
         p *= self._intent_factor(truth, event, cust, action, at)
 
+        # A silent re-presentment cannot recover a customer who walked away
+        # from a checkout. There is no stored credential to charge and nobody
+        # at the 3DS screen to approve it -- the retry simply fails at the same
+        # step. A standing mandate is the exception: that is precisely what a
+        # subscription authorises, so the merchant CAN re-present it.
+        #
+        # Without this, the model concluded that silently retrying an
+        # `authentication_failed` was competitive with messaging the customer,
+        # which inverts the entire reason nudges exist.
+        if (
+            truth.true_class == RecoveryClass.NUDGE_CUSTOMER
+            and action == Action.RETRY
+            and not event.is_subscription
+        ):
+            p *= 0.18
+
         entity = event.psp if (event.method == Method.UPI and event.psp) else event.issuer
 
         if action == Action.RETRY:
