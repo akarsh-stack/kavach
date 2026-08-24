@@ -163,6 +163,7 @@ def generate_batch(
     days: int = 30,
     n_customers: int = 3000,
     start: datetime | None = None,
+    prob_scale: float = 1.0,
 ) -> tuple[World, list[FailureEvent], dict]:
     """Simulate `n_attempts` payments over `days`; return the world and failures.
 
@@ -175,7 +176,7 @@ def generate_batch(
 
     pop = build_population(seed, n_customers)
     health = IssuerHealth(seed, start, days)
-    world = World(seed, pop, health)
+    world = World(seed, pop, health, prob_scale=prob_scale)
 
     cust_ids = sorted(pop.customers.keys())
     failures: list[FailureEvent] = []

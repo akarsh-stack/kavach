@@ -182,7 +182,18 @@ class World:
         seed: int,
         population: Population,
         health: IssuerHealth,
+        prob_scale: float = 1.0,
     ) -> None:
+        self.prob_scale = prob_scale
+        """Multiplier on every assumed recovery probability.
+
+        The single knob evaluation/sensitivity.py turns to answer the question
+        that decides whether any of this is trustworthy: if our Tier 3 guesses
+        are globally too generous or too stingy, does the *ranking* of policies
+        change? It should not -- a scale factor lifts every policy at once --
+        and demonstrating that is what lets us quote a lift rather than a
+        rupee figure we cannot defend.
+        """
         self._seed = seed
         self._key = seed.to_bytes(8, "big", signed=False) if seed >= 0 else b"neg"
         self.pop = population
@@ -286,7 +297,7 @@ class World:
         if base <= 0.0:
             return 0.0
 
-        p = truth.base_prob * base
+        p = truth.base_prob * self.prob_scale * base
 
         # Repeated attempts against an unchanged underlying condition get
         # progressively less likely. Without this, a policy could brute-force

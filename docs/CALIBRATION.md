@@ -202,11 +202,53 @@ designed to make this hard and fair:
   per-event by the world from context the agent must *infer*. Performance on
   these is reported separately.
 
-**5.4 Sensitivity analysis.** `eval/sensitivity.py` re-runs the full comparison
-across a grid of Tier 3 assumptions — recovery probabilities scaled ±30%,
-annoyance cost across two orders of magnitude, customer responsiveness varied.
-We report the range of the lift, not a single number. **If the sign of the lift
-flips anywhere in that grid, the README says so on the first screen.**
+**5.4 Sensitivity analysis.** `evaluation/sensitivity.py` re-runs the full
+comparison across a 36-point grid of Tier 3 assumptions — recovery probabilities
+scaled ±30%, annoyance cost across two orders of magnitude, and compliance
+exposure including zero. We report the range of the lift, not a single number.
+
+### 5.4.1 Result: the sign does flip, and we know exactly where
+
+Run on the non-LLM policies (300-failure slice, seed 42):
+
+```
+                                no_retry   fixed_retry   rules_engine
+recovery prob  x0.7                    0        50,812         96,520
+               x1.0                    0       105,696        108,571
+               x1.3                    0       113,304        121,011
+
+annoyance cost x0.0                    0       105,696        110,853
+               x1.0                    0       105,696        108,571
+               x10.0                   0       105,696         88,029
+
+compliance     x0.0                    0       115,596        108,571
+exposure       x1.0                    0       105,696        108,571
+               x5.0                    0        66,096        108,571
+```
+
+`rules_engine` wins 27 of 36 points. **It loses 9, and they are not scattered —
+8 of the 9 are the entire `exposure x0` column.**
+
+That is a clean, interpretable finding rather than noise, and it says something
+specific: *the case for following Razorpay's documented guidance over a dumb
+retry loop rests almost entirely on re-presenting risk declines not being free.*
+Set that cost to zero and the naive loop wins on the merchant's own P&L, every
+time. The remaining loss is at `annoyance x10`, where messaging customers stops
+being worth it and a policy that never messages anyone pulls ahead.
+
+We think a non-zero exposure is obviously correct — card networks levy
+excessive-retry fees and acquirers review MIDs over exactly this behaviour — but
+we cannot source a point estimate, so the honest statement is conditional:
+
+> Following the documented guidance beats a naive retry loop **provided**
+> re-presenting a risk decline carries any real cost at all. If it genuinely
+> costs nothing, run the naive loop.
+
+**Magnitude is not defensible, only direction.** Across the grid the lift ranges
+from −23.8% to +781.6%. The upper end is an artefact of the denominator
+collapsing (at `prob x0.7, exposure x5` the naive loop is barely net-positive,
+so any comparison against it explodes). Quoting a single lift percentage from
+this project would be misleading, and we do not.
 
 ---
 
