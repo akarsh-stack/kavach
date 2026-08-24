@@ -6,6 +6,16 @@ a reviewer finding one we hid.
 
 ## Blocking submission
 
+- [ ] **The Anthropic API path has never executed.** `ANTHROPIC_API_KEY` in the
+  dev environment is a 54-char key with an `fe_oa_e` prefix, which is not an
+  Anthropic key (those start with `sk-ant-`), and it returns
+  `401 invalid x-api-key`. No `ant` CLI profile is present either. Everything
+  downstream therefore runs on `StubClient`, whose output is **not a model** and
+  must never be reported as one. `agent/llm.py` is written against the current
+  documented SDK surface but is unverified against a live endpoint. First thing
+  to do once a real key exists: run `scripts/smoke_llm.py`. — *owner: blocked on
+  credentials*
+
 - [ ] **NPCI figures are second-hand.** `sim/issuers.py` per-bank decline rates
   come from secondary reporting of an older NPCI snapshot. Must be replaced with
   a specific month's official file from the NPCI BD/TD & Uptime dashboard, cited
