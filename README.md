@@ -135,7 +135,29 @@ completely different luck and a 5% "lift" could be pure variance. With common
 random numbers, the roll deciding *"does attempt 2 on pay_00042 succeed"* is the
 same under every policy. A policy that wins, won on judgement.
 
-### 4. The failures emerge from the model, so calibration is falsifiable
+### 4. You can reproduce the model-driven numbers without a model
+
+Every backend runs at `temperature 0`, which makes the model a deterministic
+function of its inputs — so [`agent/cache.py`](agent/cache.py) memoises decisions
+to disk, keyed on `(model, schema, system prompt, user message)`. Any change to
+the prompt or the observation is a different key and a real call; there is no
+way to silently serve a stale decision.
+
+**That cache is committed.** A reviewer with no API key and no GPU can clone this
+repo, run the evaluation, and get our exact numbers *including the LLM policies*.
+
+It also makes the sweep affordable. Measured on a 27-point grid over the agent:
+
+```
+without the cache: 4,329 model calls
+with it:             164        (96.2% hit rate)
+```
+
+Entries record which model produced them, so a cached stub decision can never
+launder itself into a run labelled as a model's, and one model's decisions can
+never be served under another's name. Both properties are tested.
+
+### 5. The failures emerge from the model, so calibration is falsifiable
 
 We simulate all 20,000 payment attempts — successes included — and let each fail
 as a *consequence* of its issuer's NPCI-derived decline rate, any live outage,
@@ -170,7 +192,10 @@ agent/         cannot import sim/. At all.
   decide.py      one structured call: diagnose + plan
   policy.py      8 ordered guardrails that can overrule the model
   audit.py       append-only decision log
-  llm.py         Claude via structured output · llm_ollama.py · stub
+  llm.py         Claude via structured output
+  llm_ollama.py  local Ollama or Ollama Cloud, same interface
+  cache.py       deterministic decision cache -- committed, so results
+                 reproduce without credentials
 
 economics/     MDR, messaging, human time, goodwill, compliance exposure
 evaluation/    adapter (the only place both halves meet), baselines,
@@ -178,7 +203,7 @@ evaluation/    adapter (the only place both halves meet), baselines,
 web/           Express API + React dashboard
 ```
 
-**7,475 lines of Python, 1,090 of JS/JSX, 20 tests.**
+**~7,900 lines of Python, ~1,100 of JS/JSX, 32 tests.**
 
 Full design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 

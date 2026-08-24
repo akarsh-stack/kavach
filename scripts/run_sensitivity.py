@@ -53,6 +53,13 @@ def main() -> int:
             "qwen2.5:7b" if args.engine == "ollama" else "claude-haiku-4-5"
         )
         client = build_client(engine=args.engine, model=model)
+        print(
+            "  note: the first grid point populates the decision cache; the
+"
+            "        remaining points reuse it, so a full sweep costs roughly
+"
+            "        one evaluation rather than 36. See agent/cache.py."
+        )
         if client.engine == "stub":
             print("\nRefusing to run a sensitivity sweep on the stub.")
             print("A stub sweep measures nothing and its output could be mistaken")

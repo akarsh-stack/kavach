@@ -199,8 +199,12 @@ def full_report(results: list[RunResult], stats: dict, batch_size: int) -> str:
         out.append("")
         out.append("  MODEL USAGE")
         for name, u in usage:
-            out.append(
-                f"    {name:<22} {u['calls']:>5} calls  "
-                f"cache {u['cache_hit_rate']:.0%}  ${u['cost_usd']:.3f}"
+            line = (
+                f"    {name:<22} {u.get('model', '?'):<22} "
+                f"{u['calls']:>5} live calls  ${u['cost_usd']:.3f}"
             )
+            c = u.get("cache")
+            if c:
+                line += f"   (disk cache {c['hit_rate']:.0%} of {c['hits'] + c['misses']})"
+            out.append(line)
     return "\n".join(out)

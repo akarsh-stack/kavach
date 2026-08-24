@@ -386,3 +386,8 @@ def _finalise(
     client = getattr(policy, "client", None)
     if client is not None:
         result.llm_usage = client.usage.summary()
+        # Cache stats belong next to the usage numbers: "600 decisions, 0 live
+        # calls" is the difference between a result someone else can reproduce
+        # and one they have to take on trust.
+        if hasattr(client, "stats"):
+            result.llm_usage["cache"] = client.stats()
