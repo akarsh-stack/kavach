@@ -49,17 +49,13 @@ def main() -> int:
     else:
         from agent.llm import build_client
 
-        model = args.model or (
-            "qwen2.5:7b" if args.engine == "ollama" else "claude-haiku-4-5"
-        )
-        client = build_client(engine=args.engine, model=model)
-        print(
-            "  note: the first grid point populates the decision cache; the
-"
-            "        remaining points reuse it, so a full sweep costs roughly
-"
-            "        one evaluation rather than 36. See agent/cache.py."
-        )
+        # Let the client pick its own default -- cloud when a key is present,
+        # local otherwise. Hard-coding the local 7B here would silently point a
+        # cloud key at a model nobody has pulled.
+        client = build_client(engine=args.engine, model=args.model or None)
+        print("  note: the first grid point populates the decision cache; the")
+        print("        remaining points reuse it, so a full sweep costs roughly")
+        print("        one evaluation rather than 36. See agent/cache.py.")
         if client.engine == "stub":
             print("\nRefusing to run a sensitivity sweep on the stub.")
             print("A stub sweep measures nothing and its output could be mistaken")

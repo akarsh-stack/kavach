@@ -6,7 +6,21 @@ a reviewer finding one we hid.
 
 ## Blocking submission
 
-- [ ] **The Anthropic API path has never executed.** `ANTHROPIC_API_KEY` in the
+- [x] ~~**No model has ever run a full evaluation.**~~ Resolved: gpt-oss:120b
+  via Ollama Cloud produced the committed results, and the decision cache makes
+  them reproducible without credentials.
+
+- [ ] **The Anthropic API path has still never executed.** Not blocking -- the
+  headline numbers come from Ollama -- but `agent/llm.py` remains unverified
+  against a live Anthropic endpoint. `scripts/smoke_llm.py` checks it in ~90s
+  if a key ever appears.
+
+- [ ] **Held-out and ambiguous sample sizes are too small to conclude from.**
+  n=3 and n=7 on a 150-payment batch. The agent's 66.7% on held-out reasons is
+  2 of 3. Extending to 300+ is the single highest-value next run, and the cache
+  makes the first 150 free.
+
+- [ ] **(superseded)** `ANTHROPIC_API_KEY` in the
   dev environment is a 54-char key with an `fe_oa_e` prefix, which is not an
   Anthropic key (those start with `sk-ant-`), and it returns
   `401 invalid x-api-key`. No `ant` CLI profile is present either. Everything

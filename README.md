@@ -17,7 +17,7 @@ The interesting part is not the agent. It is the measurement around it.
 
 | The bar asks for | Where it lives | What it does |
 |---|---|---|
-| measured money recovered across a batch | [`evaluation/harness.py`](evaluation/harness.py) | 5 policies, same 300-payment batch, same seed, same luck |
+| measured money recovered across a batch | [`evaluation/harness.py`](evaluation/harness.py) | 6 policies, same batch, same seed, same luck |
 | compliant escalation | [`agent/policy.py`](agent/policy.py) | risk → risk review, integration bugs → engineering, once per bug |
 | stopping rules | [`agent/policy.py`](agent/policy.py) | 8 ordered rules that **veto, defer or substitute** the model's proposal |
 | an audit trail | [`agent/audit.py`](agent/audit.py) | records what was **prevented**, not just what ran |
@@ -50,39 +50,86 @@ real Python pipeline and streams its output live.
 
 ## The result
 
-300 failed payments, ₹452,144 at risk, ₹400,611 of it theoretically recoverable.
+150 failed payments, ₹192,658 at risk, ₹165,146 of it theoretically recoverable.
+Decisions by `gpt-oss:120b` via Ollama Cloud, served from the committed cache.
 
 ```
-policy          net Rs   direct Rs   gross Rs   violations   wasted   escalations
-rules_engine   108,571     108,571    115,752            0        0            32
-fixed_retry *  105,696     115,596    118,353           96       96             0
-no_retry             0           0          0            0        0             0
+policy                 engine     net Rs   direct Rs   gross Rs   expo Rs   viol   wasted
+agent                  ollama     39,420      39,420     42,341         0      0        0
+agent_no_guardrails *  ollama     39,407      39,407     42,341         0      0        0
+rules_engine           rules      35,970      35,970     38,673         0      0        0
+fixed_retry *          none       32,007      36,057     36,995     4,050     48       48
+no_retry               none            0           0          0         0      0        0
+naive_llm *            ollama    -39,640     -31,240     38,752     8,400    607       57
 
 * runs without guardrails, by design
 ```
 
-**Read the second column before the first.** On `direct` — the number a merchant
-sees on their own P&L — the dumb retry loop *wins*, 115,596 to 108,571. It only
-loses once you price the 96 risk declines it re-presented.
+**The agent beats the rules engine — Razorpay's own published guidance,
+competently implemented — by 9.6% net, with zero policy violations and zero
+wasted attempts.**
 
-That is not a bug in our favour. **It is why naive retry loops are so common**,
-and it is the most useful thing this project has to say.
+Three results matter more than that one.
 
-### Does that survive our assumptions?
+### The obvious approach is worse than doing nothing
 
-No, not everywhere — and we know exactly where it breaks.
+`naive_llm` is an LLM, the error string, and "recover the revenue" — the typical
+hackathon submission. It recovered ₹38,752 gross, right alongside everyone else.
+Then it destroyed **₹18,564 in goodwill and ₹49,500 in churn**, committed **607
+policy violations**, and hit the event cap on 100 of 150 payments because it
+never stops.
 
-`python scripts/run_sensitivity.py` sweeps a 36-point grid over the three
-softest numbers in the model. `rules_engine` wins 27 points and loses 9. **Eight
-of the nine losses are the entire "compliance exposure = 0" column.**
+Net: **−₹39,640.** Same model as our agent. The difference is entirely the
+economics, the stopping rules and the guardrails.
 
-So the honest claim is conditional:
+### The guardrails gained ₹12 and prevented nothing
 
-> Following Razorpay's documented guidance beats a naive retry loop **provided**
-> re-presenting a risk decline carries any real cost. If it is genuinely free,
-> run the naive loop.
+Not the result we expected, and we are not dressing it up. On this batch the
+model never proposed a blocked action, so the policy layer never fired.
 
-Full grid and reasoning: [`docs/CALIBRATION.md` §5.4.1](docs/CALIBRATION.md).
+The honest reading: the case for the guardrails is that they **bound the worst
+case**, not that they improve the average. `naive_llm` is what the worst case
+looks like with the same model behind it.
+
+### Where the model actually earns its place
+
+```
+                  overall    n     held-out   n    ambiguous   n
+rules_engine       95.9%    147       0.0%    0       14.3%    7
+agent              95.3%    150      66.7%    3       14.3%    7
+```
+
+On **held-out** reasons — absent from the rulebook entirely — the agent scores
+66.7% where the rules engine scores nothing, because it has no mapping and
+structurally cannot. That is the gap the design predicted. **But n = 3.**
+
+On **ambiguous** `payment_failed`, both manage 1 of 7. Both bad. The contextual
+inference we claimed is not yet demonstrated, and a larger batch is the next
+thing this project needs.
+
+### Does the lift survive our assumptions?
+
+Mostly. `python scripts/run_sensitivity.py --engine ollama --subject agent`
+sweeps 36 combinations of the three softest numbers in the model.
+
+**The agent wins 34 of 36.** The two losses are both at `annoyance ×10`, where
+over-contacting costs ten times our estimate — at that price messaging stops
+paying and `fixed_retry`, which never contacts anyone, pulls ahead of every
+policy that does.
+
+```
+everywhere except annoyance x10 : 27 / 27
+at annoyance x10                :  7 /  9
+```
+
+Notably the agent is *completely insensitive* to the compliance-exposure axis,
+because it commits zero violations — exposure is a cost it never incurs. That
+same axis swings `fixed_retry` from ₹36,057 down to ₹15,807.
+
+**Magnitude is not defensible, only direction.** Across the grid the lift ranges
+−17.6% to +13.1%, so we quote no single lift percentage anywhere.
+
+Full grid: [`docs/CALIBRATION.md` §5.4.1](docs/CALIBRATION.md).
 
 ---
 
