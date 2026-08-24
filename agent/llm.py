@@ -46,11 +46,22 @@ T = TypeVar("T", bound=BaseModel)
 
 DEFAULT_MODEL = "claude-opus-5"
 
-# Claude Opus 5 list pricing, USD per million tokens.
-PRICE_INPUT_PER_MTOK = 5.00
-PRICE_OUTPUT_PER_MTOK = 25.00
-PRICE_CACHE_READ_PER_MTOK = 0.50
-PRICE_CACHE_WRITE_PER_MTOK = 6.25
+# List pricing, USD per million tokens: (input, output).
+# Cache reads are ~0.1x input, cache writes ~1.25x.
+PRICING: dict[str, tuple[float, float]] = {
+    "claude-opus-5": (5.00, 25.00),
+    "claude-sonnet-5": (2.00, 10.00),  # intro pricing through 2026-08-31
+    "claude-haiku-4-5": (1.00, 5.00),
+}
+
+# Iterate on Haiku, report on Opus. Five times cheaper for the dozens of runs
+# that shape the work, with the headline numbers produced by the strong model
+# once the design has stopped moving.
+CHEAP_MODEL = "claude-haiku-4-5"
+
+
+def price_of(model: str) -> tuple[float, float]:
+    return PRICING.get(model, PRICING[DEFAULT_MODEL])
 
 
 @dataclass
@@ -74,13 +85,21 @@ class Usage:
         self.failures += other.failures
         self.retries += other.retries
 
+    model: str = DEFAULT_MODEL
+
     def cost_usd(self) -> float:
+        # Local models cost nothing per token. Falling through to the pricing
+        # table would invent a dollar figure for a run that was free, which is
+        # the kind of small dishonesty that makes a whole report untrustworthy.
+        if self.model.startswith("ollama/"):
+            return 0.0
         m = 1_000_000
+        pin, pout = price_of(self.model)
         return (
-            self.input_tokens * PRICE_INPUT_PER_MTOK / m
-            + self.output_tokens * PRICE_OUTPUT_PER_MTOK / m
-            + self.cache_read_tokens * PRICE_CACHE_READ_PER_MTOK / m
-            + self.cache_write_tokens * PRICE_CACHE_WRITE_PER_MTOK / m
+            self.input_tokens * pin / m
+            + self.output_tokens * pout / m
+            + self.cache_read_tokens * (pin * 0.1) / m
+            + self.cache_write_tokens * (pin * 1.25) / m
         )
 
     def cache_hit_rate(self) -> float:
@@ -89,6 +108,7 @@ class Usage:
 
     def summary(self) -> dict[str, object]:
         return {
+            "model": self.model,
             "calls": self.calls,
             "input_tokens": self.input_tokens,
             "output_tokens": self.output_tokens,
@@ -180,6 +200,7 @@ class AnthropicClient(LLMClient):
                 "ANTHROPIC_API_KEY is not set. Use StubClient for a credential-free run."
             )
         self._client = anthropic.Anthropic()
+        self.usage.model = model
 
     def complete(self, system: str, user: str, schema_cls: type[T]) -> T:
         schema = _json_schema(schema_cls)
@@ -340,17 +361,56 @@ class StubClient(LLMClient):
         }
 
 
-def build_client(prefer_stub: bool = False, **kw: object) -> LLMClient:
-    """Real client when credentials work, stub otherwise, and say which.
+def build_client(
+    engine: str = "anthropic",
+    prefer_stub: bool = False,
+    **kw: object,
+) -> LLMClient:
+    """Build the requested backend, or the stub, and always say which.
 
-    Never silently downgrades: an unavailable API is reported to stdout and
-    recorded on the returned client's `engine`, so a run can be traced back to
-    what actually produced it.
+    Never silently downgrades to something weaker without printing it: a run's
+    numbers are only meaningful next to the engine that produced them, and the
+    single worst failure mode for this project would be a stub result quietly
+    presented as a model result.
     """
-    if prefer_stub:
+    if prefer_stub or engine == "stub":
         return StubClient()
+
+    if engine == "ollama":
+        from agent.llm_ollama import OllamaClient
+
+        try:
+            return OllamaClient(**kw)  # type: ignore[arg-type]
+        except LLMUnavailable as exc:
+            print("  [llm] Ollama unavailable -> StubClient")
+            print(f"        {exc}")
+            return StubClient()
+
     try:
         return AnthropicClient(**kw)  # type: ignore[arg-type]
     except LLMUnavailable as exc:
         print(f"  [llm] falling back to StubClient: {exc}")
         return StubClient()
+
+
+def estimate_cost_usd(
+    n_failures: int,
+    model: str = DEFAULT_MODEL,
+    decisions_per_failure: float = 1.8,
+    llm_policies: int = 3,
+    system_tokens: int = 1600,
+    user_tokens: int = 450,
+    output_tokens: int = 220,
+) -> float:
+    """Rough pre-run cost, so nobody discovers the bill afterwards.
+
+    Assumes the system prompt caches after the first call of each policy, which
+    is the whole reason it is worth keeping byte-stable.
+    """
+    calls = int(n_failures * decisions_per_failure * llm_policies)
+    pin, pout = price_of(model)
+    m = 1_000_000
+    cached = system_tokens * calls * (pin * 0.1) / m
+    fresh = (user_tokens * calls + system_tokens * llm_policies) * pin / m
+    out = output_tokens * calls * pout / m
+    return cached + fresh + out

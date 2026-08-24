@@ -33,6 +33,11 @@ def main() -> int:
     ap.add_argument("--attempts", type=int, default=20000)
     ap.add_argument("--no-llm", action="store_true", help="skip policies needing a model")
     ap.add_argument("--stub", action="store_true", help="force the stub even if a key exists")
+    ap.add_argument("--engine", default="ollama",
+                    choices=["ollama", "anthropic", "stub"])
+    ap.add_argument("--model", default="",
+                    help="default: qwen2.5:7b for ollama, claude-haiku-4-5 for anthropic")
+    ap.add_argument("--effort", default="low", help="anthropic only")
     ap.add_argument("--wave", type=int, default=24, help="concurrent decisions per wave")
     ap.add_argument("--audit", type=str, default="", help="dump this policy's audit trail")
     ap.add_argument("--audit-limit", type=int, default=12)
@@ -59,9 +64,26 @@ def main() -> int:
         policies = build_non_llm()
         wave = 1
     else:
-        client = build_client(prefer_stub=args.stub)
+        if args.engine == "ollama":
+            from agent.llm_ollama import DEFAULT_MODEL as OLLAMA_DEFAULT
+
+            model = args.model or OLLAMA_DEFAULT
+            print(f"  engine: ollama/{model}  (free, local)")
+            client = build_client(engine="ollama", prefer_stub=args.stub, model=model)
+            # Ollama serialises unless OLLAMA_NUM_PARALLEL is set, so a big
+            # wave just queues. Raise --wave if parallelism is configured.
+            wave = min(args.wave, 4)
+        else:
+            from agent.llm import estimate_cost_usd
+
+            model = args.model or "claude-haiku-4-5"
+            est = estimate_cost_usd(args.limit, model=model)
+            print(f"  engine: {model}   estimated cost ${est:.2f}")
+            client = build_client(
+                engine="anthropic", prefer_stub=args.stub, model=model, effort=args.effort
+            )
+            wave = args.wave
         policies = build_all(client)
-        wave = args.wave
 
     batch = failures[: args.limit]
     budget = args.budget * 100 if args.budget else None
