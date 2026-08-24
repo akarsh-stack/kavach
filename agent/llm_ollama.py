@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from typing import TypeVar
@@ -81,8 +82,9 @@ class OllamaClient(LLMClient):
         model: str | None = None,
         host: str | None = None,
         api_key: str | None = None,
-        max_attempts: int = 3,
+        max_attempts: int = 5,
         timeout_s: float = 180.0,
+        backoff_base: float = 1.5,
         temperature: float = 0.0,
         num_ctx: int = 8192,
     ) -> None:
@@ -97,6 +99,7 @@ class OllamaClient(LLMClient):
 
         self.max_attempts = max_attempts
         self.timeout_s = timeout_s
+        self.backoff_base = backoff_base
         self.temperature = temperature
         self.num_ctx = num_ctx
         self.usage.model = f"ollama/{self.model}"
@@ -196,6 +199,57 @@ class OllamaClient(LLMClient):
                 )
                 with urllib.request.urlopen(req, timeout=self.timeout_s) as r:
                     data = json.loads(r.read())
+            except urllib.error.HTTPError as exc:
+                # Rate limits and 5xx are transient and must be waited out.
+                # Retrying instantly -- which is what a bare `continue` does --
+                # burns all three attempts inside a few milliseconds and reports
+                # a model failure for what was actually back-pressure. That bug
+                # cost us 35 dropped decisions in a 100-payment run, and a
+                # dropped decision defaults to `stop`, so it silently
+                # handicapped the agent it was measuring.
+                last = exc
+                self._record(retries=1)
+                detail = ""
+                try:
+                    detail = exc.read().decode("utf-8", "replace")[:300]
+                except Exception:
+                    pass
+
+                # A 429 means two completely different things, and treating
+                # them the same wasted an entire free-tier allowance here.
+                #
+                #   - transient back-pressure: wait and it clears
+                #   - an exhausted usage quota: waiting never clears it
+                #
+                # Ollama Cloud reports the second as "session usage limit" in
+                # the body with no rate-limit headers at all. Retrying that with
+                # backoff just sleeps through the batch and then reports a model
+                # failure -- and a failed decision defaults to `stop`, so it
+                # silently handicaps the policy being measured. Fail fast and
+                # say so instead.
+                if exc.code == 429 and ("usage limit" in detail or "upgrade" in detail):
+                    raise LLMUnavailable(
+                        f"Ollama Cloud quota exhausted, not rate-limited -- waiting will "
+                        f"not help. {detail}"
+                    ) from exc
+
+                if exc.code in (408, 429, 500, 502, 503, 504):
+                    retry_after = exc.headers.get("Retry-After") if exc.headers else None
+                    delay = (
+                        float(retry_after)
+                        if retry_after and str(retry_after).isdigit()
+                        else self.backoff_base * (2**attempt)
+                    )
+                    time.sleep(min(delay, 30.0))
+                    continue
+                raise LLMUnavailable(
+                    f"ollama HTTP {exc.code}: {exc.reason} {detail}"
+                ) from exc
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                last = exc
+                self._record(retries=1)
+                time.sleep(min(self.backoff_base * (2**attempt), 30.0))
+                continue
             except Exception as exc:
                 last = exc
                 self._record(retries=1)

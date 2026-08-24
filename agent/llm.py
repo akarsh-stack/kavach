@@ -303,10 +303,14 @@ class StubClient(LLMClient):
     """
 
     engine = "stub"
+    model = "stub-heuristic-v1"
+    """Named so cache entries are attributable. A cached stub decision must
+    never be able to masquerade as a cached model decision."""
 
     def __init__(self, latency_s: float = 0.0) -> None:
         super().__init__()
         self.latency_s = latency_s
+        self.usage.model = self.model
 
     def complete(self, system: str, user: str, schema_cls: type[T]) -> T:
         if self.latency_s:
@@ -364,6 +368,7 @@ class StubClient(LLMClient):
 def build_client(
     engine: str = "anthropic",
     prefer_stub: bool = False,
+    cache: bool = True,
     **kw: object,
 ) -> LLMClient:
     """Build the requested backend, or the stub, and always say which.
@@ -373,21 +378,31 @@ def build_client(
     single worst failure mode for this project would be a stub result quietly
     presented as a model result.
     """
+    def wrap(client: LLMClient) -> LLMClient:
+        if not cache:
+            return client
+        from agent.cache import CachedClient
+
+        return CachedClient(client)
+
     if prefer_stub or engine == "stub":
-        return StubClient()
+        # The stub is cached too, so a stub run is reproducible as well -- and
+        # its entries carry engine "stub", so they can never be mistaken for a
+        # model's.
+        return wrap(StubClient())
 
     if engine == "ollama":
         from agent.llm_ollama import OllamaClient
 
         try:
-            return OllamaClient(**kw)  # type: ignore[arg-type]
+            return wrap(OllamaClient(**kw))  # type: ignore[arg-type]
         except LLMUnavailable as exc:
             print("  [llm] Ollama unavailable -> StubClient")
             print(f"        {exc}")
             return StubClient()
 
     try:
-        return AnthropicClient(**kw)  # type: ignore[arg-type]
+        return wrap(AnthropicClient(**kw))  # type: ignore[arg-type]
     except LLMUnavailable as exc:
         print(f"  [llm] falling back to StubClient: {exc}")
         return StubClient()
