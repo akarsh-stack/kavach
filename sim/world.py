@@ -27,39 +27,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from core.actions import Action, Channel
 from sim.customers import Customer, Population
 from sim.issuers import IssuerHealth
 from sim.taxonomy import BY_REASON, ErrorClass, Method, RecoveryClass, Source
-
-
-class Action(str, Enum):
-    """What the agent can do about a failed payment.
-
-    Deliberately small. A recovery system with fifty possible moves is
-    unevaluatable; five moves and a timestamp covers what a payments team
-    actually does and keeps the decision scoreable.
-    """
-
-    RETRY = "retry"
-    """Re-present the same instrument. Free-ish, silent, no customer burden."""
-
-    SWITCH_RAIL = "switch_rail"
-    """Offer the customer a different method. Needs them to act."""
-
-    NUDGE = "nudge"
-    """Contact the customer with a fresh payment link. Costs money and goodwill."""
-
-    ESCALATE = "escalate"
-    """Hand to a human. Correct for merchant bugs and risk blocks."""
-
-    STOP = "stop"
-    """Give up deliberately. Not a failure -- often the highest-value move."""
-
-
-class Channel(str, Enum):
-    WHATSAPP = "whatsapp"
-    SMS = "sms"
-    EMAIL = "email"
 
 
 # Reach x salience, relative to WhatsApp. Assumed. WhatsApp dominates in India

@@ -97,29 +97,46 @@ def test_agent_never_imports_sim() -> None:
 
 
 def test_agent_does_not_reference_truth_types() -> None:
-    """Belt and braces: no textual reference to the answer-key types either.
+    """Belt and braces: no *code* reference to the answer-key names either.
 
-    Catches the case where someone reaches hidden state through a duck-typed
-    object passed in at runtime, which the import check alone would miss.
+    Catches reaching hidden state through a duck-typed object handed in at
+    runtime, which the import check alone would miss -- e.g. someone accepting
+    an object in a function signature and reading `.true_class` off it.
+
+    Deliberately AST-based rather than a text scan. Agent modules should be
+    free to *discuss* the boundary in their docstrings -- that prose is the
+    point of the design -- and a naive `token in line` check would forbid
+    exactly the documentation we most want written.
     """
-    banned = ("Truth", "true_class", "base_prob", "base_recovery_prob", "_truth")
+    banned = {"Truth", "true_class", "base_prob", "base_recovery_prob", "_truth"}
     violations: list[str] = []
 
     for path in _agent_files():
-        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            stripped = line.strip()
-            # Prose in docstrings and comments may legitimately discuss the
-            # boundary; only real code is a violation.
-            if stripped.startswith("#"):
-                continue
-            for token in banned:
-                if token in line:
-                    violations.append(
-                        f"{path.relative_to(REPO)}:{lineno} references '{token}': {stripped[:70]}"
-                    )
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            # `obj.true_class`
+            if isinstance(node, ast.Attribute) and node.attr in banned:
+                violations.append(
+                    f"{path.relative_to(REPO)}:{node.lineno} reads attribute '.{node.attr}'"
+                )
+            # bare `true_class` / `Truth(...)`
+            elif isinstance(node, ast.Name) and node.id in banned:
+                violations.append(
+                    f"{path.relative_to(REPO)}:{node.lineno} references name '{node.id}'"
+                )
+            # `getattr(x, "true_class")` -- the obvious way around the above
+            elif isinstance(node, ast.Call):
+                fn = node.func
+                if isinstance(fn, ast.Name) and fn.id == "getattr" and len(node.args) >= 2:
+                    arg = node.args[1]
+                    if isinstance(arg, ast.Constant) and arg.value in banned:
+                        violations.append(
+                            f"{path.relative_to(REPO)}:{node.lineno} "
+                            f"getattr for '{arg.value}'"
+                        )
 
     assert not violations, (
-        "Agent code references simulator-private concepts:\n  " + "\n  ".join(violations)
+        "Agent code reaches for simulator-private state:\n  " + "\n  ".join(violations)
     )
 
 
