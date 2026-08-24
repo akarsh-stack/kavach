@@ -1,5 +1,5 @@
 # Common tasks. `make help` lists them.
-.PHONY: help setup test batch eval sens web all clean
+.PHONY: help setup test batch eval sens web demo all clean
 
 help:
 	@echo "setup   install python deps + node deps"
@@ -8,6 +8,7 @@ help:
 	@echo "eval    compare the credential-free policies"
 	@echo "sens    sweep the assumptions; does the conclusion hold?"
 	@echo "web     start the dashboard (api :5174, ui :5173)"
+	@echo "demo    narrated walkthrough, sized for screen recording"
 	@echo "all     batch + eval + sens + test, in order"
 
 setup:
@@ -28,6 +29,9 @@ sens:
 
 web:
 	cd web && npm run dev
+
+demo:
+	python scripts/demo.py
 
 all: batch eval sens test
 
