@@ -75,6 +75,113 @@ def result_to_dict(r: RunResult) -> dict:
     }
 
 
+def _primary(results: list[RunResult]) -> RunResult:
+    """The policy the console is about: the agent, or the best available."""
+    for name in ("agent", "rules_engine", "fixed_retry"):
+        for r in results:
+            if r.policy_name == name:
+                return r
+    return results[0]
+
+
+def workflow(r: RunResult) -> dict:
+    """Per-payment lifecycles: the operational view, not the research log.
+
+    The audit trail is one row per *decision*. An operator does not think in
+    decisions, they think in payments: what failed, what did the agent conclude,
+    what is it going to do, when, and does anything need me. So the entries are
+    folded back into payment lifecycles here, in Python, where the metrics
+    already live -- the web layer stays a renderer and never re-derives numbers.
+
+    States mirror the brief's own vocabulary: recovered / needs a human /
+    stopped deliberately / still scheduled.
+    """
+    by_payment: dict[str, list] = {}
+    for e in r.audit.entries:
+        by_payment.setdefault(e.payment_id, []).append(e)
+
+    payments = []
+    for pid, entries in by_payment.items():
+        entries.sort(key=lambda x: x.scheduled_at)
+        first, last = entries[0], entries[-1]
+
+        recovered = next((e for e in entries if e.succeeded), None)
+        if recovered:
+            state = "recovered"
+        elif last.final_action == "escalate":
+            state = "needs_human"
+        elif last.final_action == "stop":
+            state = "stopped"
+        else:
+            state = "scheduled"
+
+        payments.append(
+            {
+                "payment_id": pid,
+                "customer_id": first.customer_id,
+                "amount_paise": first.amount_paise,
+                "reason": first.reason,
+                "description": first.description,
+                "method": first.method,
+                "issuer": first.issuer,
+                "is_subscription": first.is_subscription,
+                "failed_at": first.failed_at.isoformat() if first.failed_at else None,
+                "diagnosis": first.diagnosed_class,
+                "confidence": first.confidence,
+                "rationale": first.rationale,
+                "state": state,
+                "recovered_paise": recovered.recovered_paise if recovered else 0,
+                "cost_paise": sum(e.cost_paise for e in entries),
+                "attempts": sum(1 for e in entries if e.executed),
+                # The reason a human is being asked to look, in their words not
+                # ours -- an escalation with no stated cause is just a queue.
+                "handoff": (
+                    last.policy_explanation
+                    if state in ("needs_human", "stopped") and last.was_overruled
+                    else ""
+                ),
+                "blocked_by": last.rule if last.was_overruled else "",
+                "steps": [
+                    {
+                        "at": e.scheduled_at.isoformat(),
+                        "action": e.final_action,
+                        "proposed": e.proposed_action,
+                        "channel": e.channel,
+                        "rule": e.rule,
+                        "verdict": e.verdict,
+                        "executed": e.executed,
+                        "succeeded": e.succeeded,
+                        "cost_paise": e.cost_paise,
+                        "explanation": e.policy_explanation,
+                    }
+                    for e in entries
+                ],
+            }
+        )
+
+    order = {"needs_human": 0, "scheduled": 1, "recovered": 2, "stopped": 3}
+    payments.sort(key=lambda p: (order.get(p["state"], 9), -p["amount_paise"]))
+
+    at_risk = sum(p["amount_paise"] for p in payments if p["state"] != "recovered")
+    return {
+        "policy": r.policy_name,
+        "engine": r.engine,
+        "is_stub": bool(r.uses_llm and r.engine == "stub"),
+        "totals": {
+            "payments": len(payments),
+            "at_risk_paise": at_risk,
+            "recovered_paise": sum(p["recovered_paise"] for p in payments),
+            "spent_paise": sum(p["cost_paise"] for p in payments),
+            "needs_human": sum(1 for p in payments if p["state"] == "needs_human"),
+            "stopped": sum(1 for p in payments if p["state"] == "stopped"),
+            "recovered_count": sum(1 for p in payments if p["state"] == "recovered"),
+            "blocked_actions": len(r.audit.overruled()),
+        },
+        "vetoes_by_rule": r.audit.vetoes_by_rule(),
+        "payments": payments,
+    }
+
+
 def save_run(
     results: list[RunResult],
     stats: dict,
@@ -99,6 +206,10 @@ def save_run(
             "downtime": stats.get("downtime"),
         },
         "policies": [result_to_dict(r) for r in results],
+        # The operational view, built for the primary policy: the agent if it
+        # ran, otherwise the best real one. This is what the recovery console
+        # renders -- the evaluation is the evidence behind it, not the product.
+        "workflow": workflow(_primary(results)),
         "audits": {
             r.policy_name: {
                 "summary": r.audit.summary(),

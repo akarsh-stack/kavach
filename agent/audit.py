@@ -55,6 +55,16 @@ class AuditEntry:
     cost_paise: int
     note: str = ""
 
+    # Operational context, defaulted so it sits after the required fields.
+    # Present so the recovery console can render a work queue without
+    # re-deriving anything from the simulator -- an operator needs to know
+    # which rail and which bank failed, not just the amount.
+    description: str = ""
+    method: str = ""
+    issuer: str = ""
+    is_subscription: bool = False
+    failed_at: datetime | None = None
+
     @property
     def was_overruled(self) -> bool:
         return self.proposed_action != self.final_action
@@ -63,6 +73,7 @@ class AuditEntry:
         d = asdict(self)
         d["ts"] = self.ts.isoformat()
         d["scheduled_at"] = self.scheduled_at.isoformat()
+        d["failed_at"] = self.failed_at.isoformat() if self.failed_at else None
         return d
 
     @property
@@ -243,6 +254,11 @@ def make_entry(
         customer_id=obs.customer_id,
         amount_paise=obs.amount_paise,
         reason=obs.reason,
+        description=obs.description,
+        method=obs.method,
+        issuer=obs.entity,
+        is_subscription=obs.is_subscription,
+        failed_at=obs.failed_at,
         diagnosed_class=decision_class,
         confidence=confidence,
         proposed_action=proposed.value,

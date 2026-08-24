@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { evaluate, getRun, getSensitivity } from "./api.js";
 import AuditTrail from "./components/AuditTrail.jsx";
-import Console from "./components/Console.jsx";
+import RecoveryConsole from "./components/RecoveryConsole.jsx";
+import RunLog from "./components/RunLog.jsx";
 import CostStack from "./components/CostStack.jsx";
 import DiagnosisTable from "./components/DiagnosisTable.jsx";
 import MetricCards from "./components/MetricCards.jsx";
@@ -13,6 +14,8 @@ import { Icon } from "./components/ui.jsx";
 const ENGINES = [
   ["none", "No model · 3 baselines"],
   ["ollama", "Ollama · local or cloud"],
+  ["gemini", "Gemini · free tier"],
+  ["groq", "Groq · free tier"],
   ["anthropic", "Anthropic"],
   ["stub", "Stub · plumbing only"],
 ];
@@ -38,6 +41,7 @@ export default function App() {
   const [engine, setEngine] = useState("none");
   const [limit, setLimit] = useState(300);
   const [dismissed, setDismissed] = useState(false);
+  const [tab, setTab] = useState("console");
 
   const load = useCallback(async () => {
     try {
@@ -81,10 +85,11 @@ export default function App() {
             <span className="dot" />
             Razorpay Buildathon · Track 03
           </div>
-          <h1>Bounded revenue recovery — agent vs four alternatives</h1>
+          <h1>Bounded revenue recovery</h1>
           <p className="sub">
             {run
-              ? `${run.batch_size} failed payments · seed ${run.seed} · ${new Date(
+              ? `${run.workflow?.policy ?? "agent"} · ${run.batch_size} failed payments · ` +
+                `${run.workflow?.engine ?? "?"} · ${new Date(
                   run.generated_at,
                 ).toLocaleString()}`
               : "loading…"}
@@ -161,9 +166,24 @@ export default function App() {
         </div>
       )}
 
-      <Console log={log} running={running} />
+      <RunLog log={log} running={running} />
 
       {run && (
+        <>
+          <div className="tabs rise">
+            <button data-active={tab === "console"} onClick={() => setTab("console")}>
+              Recovery console
+            </button>
+            <button data-active={tab === "evidence"} onClick={() => setTab("evidence")}>
+              Evidence
+            </button>
+          </div>
+
+          {tab === "console" && <RecoveryConsole workflow={run.workflow} />}
+        </>
+      )}
+
+      {run && tab === "evidence" && (
         <>
           <MetricCards run={run} />
 

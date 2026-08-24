@@ -50,6 +50,9 @@ def main() -> int:
                     help="only decisions the policy layer overruled")
     ap.add_argument("--budget", type=int, default=0, help="batch budget in rupees, 0 = none")
     ap.add_argument("--save", default="latest", help="artifact name under data/runs/")
+    ap.add_argument("--no-ablation", action="store_true",
+                    help="skip agent_no_guardrails; it is a diagnostic, not a result, "
+                         "and it costs a third of the model calls")
     args = ap.parse_args()
 
     print("generating batch...")
@@ -107,7 +110,7 @@ def main() -> int:
             # usage, so a narrower wave finishes faster than a wide one that
             # spends its time backing off.
             wave = min(args.wave, 6) if args.engine == "groq" else args.wave
-        policies = build_all(client)
+        policies = build_all(client, include_ablation=not args.no_ablation)
 
     batch = failures[: args.limit]
     budget = args.budget * 100 if args.budget else None

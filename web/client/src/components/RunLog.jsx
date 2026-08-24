@@ -59,7 +59,7 @@ function colourise(line) {
   return out;
 }
 
-export default function Console({ log, running }) {
+export default function RunLog({ log, running }) {
   const [open, setOpen] = useSticky("console-open", true);
   const bodyRef = useRef(null);
   const pinned = useRef(true);
