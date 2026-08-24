@@ -307,6 +307,9 @@ class PolicyEngine:
                     f"(cap {self.limits.max_contacts_per_payment})."
                 ),
                 proposed_action=p.action,
+                diagnosed_class=p.diagnosed_class,
+                confidence=p.confidence,
+                rationale=p.rationale,
             )
 
         if obs.customer_contacts_this_week >= self.limits.max_contacts_per_customer_per_week:
@@ -323,6 +326,9 @@ class PolicyEngine:
                     f"The relationship is worth more than this payment."
                 ),
                 proposed_action=p.action,
+                diagnosed_class=p.diagnosed_class,
+                confidence=p.confidence,
+                rationale=p.rationale,
             )
         return None
 

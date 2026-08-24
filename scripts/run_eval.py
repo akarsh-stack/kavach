@@ -15,6 +15,10 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
@@ -69,14 +73,20 @@ def main() -> int:
         wave = 1
     else:
         if args.engine == "ollama":
-            from agent.llm_ollama import DEFAULT_MODEL as OLLAMA_DEFAULT
+            import os
 
-            model = args.model or OLLAMA_DEFAULT
-            print(f"  engine: ollama/{model}  (free, local)")
-            client = build_client(engine="ollama", prefer_stub=args.stub, model=model)
-            # Ollama serialises unless OLLAMA_NUM_PARALLEL is set, so a big
-            # wave just queues. Raise --wave if parallelism is configured.
-            wave = min(args.wave, 4)
+            # Let the client choose: cloud when OLLAMA_API_KEY is set, local
+            # otherwise. Forcing the local default here would silently point a
+            # cloud key at a 7B model nobody has pulled.
+            client = build_client(
+                engine="ollama", prefer_stub=args.stub, model=args.model or None
+            )
+            cloud = bool(os.environ.get("OLLAMA_API_KEY")) and client.engine == "ollama"
+            where = "cloud" if cloud else "local"
+            print(f"  engine: ollama/{getattr(client, 'model', '?')}  ({where}, free)")
+            # A local server serialises unless OLLAMA_NUM_PARALLEL is set, so a
+            # big wave just queues. The cloud fans out, so let it.
+            wave = args.wave if cloud else min(args.wave, 4)
         else:
             from agent.llm import estimate_cost_usd
 

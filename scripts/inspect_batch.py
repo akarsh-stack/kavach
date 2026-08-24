@@ -10,6 +10,10 @@ from __future__ import annotations
 
 import argparse
 import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 from collections import Counter
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))

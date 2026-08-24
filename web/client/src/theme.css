@@ -129,7 +129,10 @@ body {
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  /* 158px keeps all four tiles on one row down to ~700px of content width,
+     which is where a laptop browser pane actually lands. At 168px they wrapped
+     3+1 by four pixels. */
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
