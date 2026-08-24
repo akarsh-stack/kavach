@@ -1,0 +1,441 @@
+/*
+ * Palette values are the validated dark-mode set from the data-viz reference,
+ * checked against this surface (#12120f) rather than assumed:
+ *
+ *   lightness band .. PASS  all 6 inside L 0.48-0.67
+ *   chroma floor .... PASS
+ *   CVD separation .. PASS  worst adjacent yellow<->aqua dE 8.4 (protan)
+ *   normal vision ... PASS  worst adjacent magenta<->yellow dE 19.3
+ *   contrast ........ PASS  all 6 >= 3:1 on surface
+ *
+ * Series colours are assigned in fixed slot order and never cycled. Status
+ * colours are reserved and never reused as a series -- a red bar in this
+ * dashboard always means something is wrong, never "policy number four".
+ */
+
+:root {
+  --plane: #0a0a08;
+  --surface: #12120f;
+  --surface-2: #191916;
+
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--plane);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+/* ---------- masthead ---------- */
+
+.masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.masthead .sub {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: var(--mono);
+}
+
+/* ---------- cards ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
+}
+
+.card > h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+}
+
+.card > .note {
+  margin: 0 0 18px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  max-width: 78ch;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- stat tiles ---------- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.tile .label {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tile .value {
+  margin-top: 7px;
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.tile .value.small {
+  font-size: 19px;
+}
+
+.tile .foot {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-family: var(--mono);
+}
+
+/* ---------- legend ---------- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.legend .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.legend .swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex: none;
+}
+
+/* ---------- tables ---------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: right;
+  font-weight: 550;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 10px 9px;
+  border-bottom: 1px solid var(--axis);
+}
+
+th:first-child,
+td:first-child {
+  text-align: left;
+}
+
+td {
+  text-align: right;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--grid);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+td.name {
+  font-family: var(--sans);
+  color: var(--text-primary);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-family: var(--sans);
+  letter-spacing: 0.03em;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.pill.warn {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+.pill.bad {
+  color: var(--critical);
+  border-color: color-mix(in srgb, var(--critical) 45%, transparent);
+}
+
+.pill.ok {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 45%, transparent);
+}
+
+/* ---------- charts ---------- */
+
+.axis-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.bar-name {
+  fill: var(--text-primary);
+  font-size: 12.5px;
+  font-family: var(--sans);
+}
+
+.bar-value {
+  fill: var(--text-secondary);
+  font-size: 12px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tip {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 11px;
+  font-size: 12px;
+  color: var(--text-primary);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+  max-width: 280px;
+  line-height: 1.45;
+}
+
+.tip .k {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.tip .v {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- controls ---------- */
+
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+button,
+select {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-family: var(--sans);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled),
+select:hover {
+  border-color: var(--text-muted);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--series-1);
+  border-color: var(--series-1);
+  color: #fff;
+  font-weight: 550;
+}
+
+.console {
+  margin-top: 14px;
+  background: var(--plane);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-height: 260px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.console .err {
+  color: var(--serious);
+}
+
+/* ---------- audit ---------- */
+
+.audit-row {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--axis);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 9px;
+  background: var(--surface-2);
+}
+
+.audit-row.blocked {
+  border-left-color: var(--critical);
+}
+
+.audit-row.recovered {
+  border-left-color: var(--good);
+}
+
+.audit-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.audit-head .reason {
+  color: var(--text-primary);
+}
+
+.audit-head .amt {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.audit-line {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.audit-line .lbl {
+  display: inline-block;
+  width: 74px;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.audit-line .rule {
+  color: var(--critical);
+  font-family: var(--mono);
+}
+
+.banner {
+  background: color-mix(in srgb, var(--critical) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--critical) 45%, transparent);
+  border-radius: 9px;
+  padding: 13px 16px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.banner strong {
+  color: var(--critical);
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 26px 0;
+  text-align: center;
+}

@@ -33,6 +33,7 @@ def main() -> int:
     ap.add_argument("--engine", default="none", choices=["none", "ollama", "anthropic"])
     ap.add_argument("--model", default="")
     ap.add_argument("--subject", default="", help="policy to judge; default = best available")
+    ap.add_argument("--save", default="sensitivity", help="artifact name under data/runs/")
     args = ap.parse_args()
 
     if args.engine == "none":
@@ -76,6 +77,12 @@ def main() -> int:
     points = sens.sweep(make, seed=args.seed, limit=args.limit)
     print(f"\n{grid} points in {time.time() - t0:.1f}s\n")
     print(sens.report(points, subject=subject))
+
+    if args.save:
+        from evaluation.artifacts import save_sensitivity
+
+        print()
+        print(f"  saved -> {save_sensitivity(points, subject, name=args.save)}")
     return 0
 
 

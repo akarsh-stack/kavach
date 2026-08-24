@@ -45,6 +45,7 @@ def main() -> int:
     ap.add_argument("--audit-blocked", action="store_true",
                     help="only decisions the policy layer overruled")
     ap.add_argument("--budget", type=int, default=0, help="batch budget in rupees, 0 = none")
+    ap.add_argument("--save", default="latest", help="artifact name under data/runs/")
     args = ap.parse_args()
 
     print("generating batch...")
@@ -128,6 +129,13 @@ def main() -> int:
     )
 
     print(rep.full_report(results, slice_stats, len(batch)))
+
+    if args.save:
+        from evaluation.artifacts import save_run
+
+        path = save_run(results, slice_stats, len(batch), args.seed, name=args.save)
+        print()
+        print(f"  saved -> {path}")
 
     if args.audit:
         match = next((r for r in results if r.policy_name == args.audit), None)

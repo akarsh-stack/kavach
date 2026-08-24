@@ -1,0 +1,402 @@
+{
+  "generated_at": "2026-08-24T11:24:03.690625+00:00",
+  "subject": "rules_engine",
+  "points": [
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 6071229,
+        "rules_engine": 9885049
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 5081229,
+        "rules_engine": 9885049
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 1121229,
+        "rules_engine": 9885049
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 6071229,
+        "rules_engine": 9861745
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 5081229,
+        "rules_engine": 9861745
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 1121229,
+        "rules_engine": 9861745
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 6071229,
+        "rules_engine": 9652009
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 5081229,
+        "rules_engine": 9652009
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 1121229,
+        "rules_engine": 9652009
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 6071229,
+        "rules_engine": 7554649
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 5081229,
+        "rules_engine": 7554649
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 0.7,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 1121229,
+        "rules_engine": 7554649
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 11559557,
+        "rules_engine": 11085299
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 10569557,
+        "rules_engine": 11085299
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 6609557,
+        "rules_engine": 11085299
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 11559557,
+        "rules_engine": 11062475
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 10569557,
+        "rules_engine": 11062475
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 6609557,
+        "rules_engine": 11062475
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 11559557,
+        "rules_engine": 10857059
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 10569557,
+        "rules_engine": 10857059
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 6609557,
+        "rules_engine": 10857059
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 11559557,
+        "rules_engine": 8802899
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 10569557,
+        "rules_engine": 8802899
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.0,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 6609557,
+        "rules_engine": 8802899
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 12320423,
+        "rules_engine": 12326986
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 11330423,
+        "rules_engine": 12326986
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 0.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 7370423,
+        "rules_engine": 12326986
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 12320423,
+        "rules_engine": 12304402
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 11330423,
+        "rules_engine": 12304402
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 0.1,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 7370423,
+        "rules_engine": 12304402
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 12320423,
+        "rules_engine": 12101146
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 11330423,
+        "rules_engine": 12101146
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 1.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 7370423,
+        "rules_engine": 12101146
+      },
+      "winner": "rules_engine"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 0.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 12320423,
+        "rules_engine": 10068586
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 1.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 11330423,
+        "rules_engine": 10068586
+      },
+      "winner": "fixed_retry"
+    },
+    {
+      "prob_scale": 1.3,
+      "annoyance_mult": 10.0,
+      "exposure_mult": 5.0,
+      "nets": {
+        "no_retry": 0,
+        "fixed_retry": 7370423,
+        "rules_engine": 10068586
+      },
+      "winner": "rules_engine"
+    }
+  ]
+}
