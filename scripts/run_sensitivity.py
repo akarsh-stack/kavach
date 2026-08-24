@@ -34,7 +34,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--limit", type=int, default=300)
-    ap.add_argument("--engine", default="none", choices=["none", "ollama", "anthropic"])
+    ap.add_argument("--engine", default="none", choices=["none", "ollama", "gemini", "groq", "anthropic"])
     ap.add_argument("--model", default="")
     ap.add_argument("--subject", default="", help="policy to judge; default = best available")
     ap.add_argument("--save", default="sensitivity", help="artifact name under data/runs/")

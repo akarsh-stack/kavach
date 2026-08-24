@@ -46,6 +46,8 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
+from agent.jsonio import contract as _contract
+from agent.jsonio import extract_json as _extract_json
 from agent.llm import LLMClient, LLMQuotaExhausted, LLMUnavailable, _json_schema
 
 T = TypeVar("T", bound=BaseModel)
@@ -292,78 +294,6 @@ class OllamaClient(LLMClient):
 
         self._record(failures=1)
         raise LLMUnavailable(f"ollama failed after {self.max_attempts} attempts: {last}")
-
-
-def _contract(schema_cls: type[BaseModel], schema: dict) -> str:
-    """Render the required JSON shape as prose the model will actually follow.
-
-    Generated from the Pydantic schema rather than hand-written, so it cannot
-    drift out of sync with what the validator will accept -- a prompt that
-    describes a slightly different contract from the one being enforced is a
-    very annoying bug to find.
-    """
-    props = schema.get("properties", {})
-    required = set(schema.get("required", []))
-    defs = schema.get("$defs", {})
-
-    def describe(spec: dict) -> str:
-        if "enum" in spec:
-            return " | ".join(json.dumps(v) for v in spec["enum"])
-        if "$ref" in spec:
-            ref = defs.get(spec["$ref"].split("/")[-1], {})
-            return describe(ref)
-        if "anyOf" in spec:
-            return " | ".join(describe(s) for s in spec["anyOf"])
-        t = spec.get("type")
-        if t == "number" or t == "integer":
-            lo, hi = spec.get("minimum"), spec.get("maximum")
-            if lo is not None and hi is not None:
-                return f"number between {lo} and {hi}"
-            return "number"
-        if t == "string":
-            n = spec.get("maxLength")
-            return f"string (max {n} chars)" if n else "string"
-        if t == "null":
-            return "null"
-        return t or "value"
-
-    lines = ["# Required output format", "", "Return ONLY this JSON object:", "{"]
-    for name, spec in props.items():
-        opt = "" if name in required else "   (optional)"
-        lines.append(f'  "{name}": {describe(spec)},{opt}')
-    lines.append("}")
-    lines += [
-        "",
-        "Every key above is required unless marked optional. Do not add keys. Do not",
-        "rename them. Do not wrap the object in markdown fences or explanatory text.",
-        "`confidence` is a NUMBER between 0 and 1, not a word like \"high\".",
-    ]
-    return "\n".join(lines)
-
-
-def _errors(exc: ValidationError) -> str:
-    out = []
-    for e in exc.errors()[:6]:
-        loc = ".".join(str(p) for p in e["loc"]) or "(root)"
-        out.append(f"  - {loc}: {e['msg']}")
-    return "\n".join(out)
-
-
-def _extract_json(text: str) -> str:
-    """Pull the JSON object out of a response that may be wrapped in prose.
-
-    Models without constrained decoding fence their output in ```json blocks or
-    add a sentence before it often enough to be worth handling here rather than
-    burning a repair turn on it.
-    """
-    s = text.strip()
-    if s.startswith("```"):
-        s = s.split("```")[1] if "```" in s[3:] else s[3:]
-        if s.startswith("json"):
-            s = s[4:]
-        s = s.strip()
-    start, end = s.find("{"), s.rfind("}")
-    return s[start : end + 1] if start != -1 and end > start else s
 
 
 def build_ollama(model: str | None = None, host: str | None = None) -> OllamaClient:

@@ -401,6 +401,17 @@ def build_client(
         # model's.
         return wrap(StubClient())
 
+    if engine in ("gemini", "groq"):
+        from agent.llm_http import GeminiClient, GroqClient
+
+        cls = GeminiClient if engine == "gemini" else GroqClient
+        try:
+            return wrap(cls(**kw))  # type: ignore[arg-type]
+        except LLMUnavailable as exc:
+            print(f"  [llm] {engine} unavailable -> StubClient")
+            print(f"        {exc}")
+            return StubClient()
+
     if engine == "ollama":
         from agent.llm_ollama import OllamaClient
 

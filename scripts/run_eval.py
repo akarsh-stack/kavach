@@ -38,7 +38,7 @@ def main() -> int:
     ap.add_argument("--no-llm", action="store_true", help="skip policies needing a model")
     ap.add_argument("--stub", action="store_true", help="force the stub even if a key exists")
     ap.add_argument("--engine", default="ollama",
-                    choices=["ollama", "anthropic", "stub"])
+                    choices=["ollama", "gemini", "groq", "anthropic", "stub"])
     ap.add_argument("--model", default="",
                     help="default: qwen2.5:7b for ollama, claude-haiku-4-5 for anthropic")
     ap.add_argument("--effort", default="low", help="anthropic only")
@@ -87,7 +87,7 @@ def main() -> int:
             # A local server serialises unless OLLAMA_NUM_PARALLEL is set, so a
             # big wave just queues. The cloud fans out, so let it.
             wave = args.wave if cloud else min(args.wave, 4)
-        else:
+        elif args.engine == "anthropic":
             from agent.llm import estimate_cost_usd
 
             model = args.model or "claude-haiku-4-5"
@@ -97,6 +97,16 @@ def main() -> int:
                 engine="anthropic", prefer_stub=args.stub, model=model, effort=args.effort
             )
             wave = args.wave
+        else:
+            # gemini / groq -- free tiers, no cost estimate to print.
+            client = build_client(
+                engine=args.engine, prefer_stub=args.stub, model=args.model or None
+            )
+            print(f"  engine: {getattr(client, 'model', args.engine)}  ({client.engine}, free)")
+            # Groq's free tier is rate-limited per minute rather than by total
+            # usage, so a narrower wave finishes faster than a wide one that
+            # spends its time backing off.
+            wave = min(args.wave, 6) if args.engine == "groq" else args.wave
         policies = build_all(client)
 
     batch = failures[: args.limit]
