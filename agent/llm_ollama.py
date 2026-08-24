@@ -46,7 +46,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from agent.llm import LLMClient, LLMUnavailable, _json_schema
+from agent.llm import LLMClient, LLMQuotaExhausted, LLMUnavailable, _json_schema
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -228,7 +228,7 @@ class OllamaClient(LLMClient):
                 # silently handicaps the policy being measured. Fail fast and
                 # say so instead.
                 if exc.code == 429 and ("usage limit" in detail or "upgrade" in detail):
-                    raise LLMUnavailable(
+                    raise LLMQuotaExhausted(
                         f"Ollama Cloud quota exhausted, not rate-limited -- waiting will "
                         f"not help. {detail}"
                     ) from exc

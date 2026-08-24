@@ -121,7 +121,17 @@ class Usage:
 
 
 class LLMUnavailable(RuntimeError):
-    pass
+    """A single decision could not be obtained. Recoverable: the policy stops."""
+
+
+class LLMQuotaExhausted(LLMUnavailable):
+    """The account is out of quota. NOT recoverable, and must not be swallowed.
+
+    A failed decision defaults to `stop`, so continuing past this point produces
+    a full set of results in which the agent silently did nothing -- numbers
+    that look real and are wrong. That is far worse than no numbers, so this
+    aborts the run.
+    """
 
 
 class LLMClient(ABC):
