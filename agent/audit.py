@@ -65,40 +65,77 @@ class AuditEntry:
         d["scheduled_at"] = self.scheduled_at.isoformat()
         return d
 
+    @property
+    def delay(self) -> str:
+        """How long after the decision the action was scheduled to run."""
+        mins = (self.scheduled_at - self.ts).total_seconds() / 60.0
+        if mins < 1:
+            return "now"
+        if mins < 60:
+            return f"+{mins:.0f}m"
+        if mins < 48 * 60:
+            return f"+{mins / 60:.1f}h"
+        return f"+{mins / 1440:.1f}d"
+
     def render(self) -> str:
-        """One human-readable line, plus a second when the policy intervened."""
-        money = f"Rs{self.amount_paise / 100:,.0f}"
+        """Five labelled lines. Written to be read aloud over a demo.
+
+        Note the two timestamps. The decision and the action are separated in
+        time -- often by hours or days -- and collapsing them into one field
+        made the log appear out of order, because entries are sequenced by when
+        they *ran* while the obvious timestamp to print is when they were
+        *decided*. Both are shown.
+        """
+        money = f"Rs {self.amount_paise / 100:,.0f}"
+        cost = f"Rs {self.cost_paise / 100:.2f}"
+
         head = (
-            f"[{self.seq:04d}] {self.ts:%d %b %H:%M}  {self.payment_id}  {money:>10}  "
+            f"[{self.seq:04d}] {self.payment_id}  {money:>12}  "
             f"{self.reason}"
         )
         diag = (
-            f"         model: {self.diagnosed_class} "
-            f"(conf {self.confidence:.2f}) -> {self.proposed_action}"
+            f"    decided   {self.ts:%d %b %H:%M}  "
+            f"{self.diagnosed_class or 'n/a'} (conf {self.confidence:.2f})"
         )
+        prop = f"    proposed  {self.proposed_action}  {self.delay}"
+        if self.channel:
+            prop += f" via {self.channel}"
+
         if self.was_overruled:
-            body = (
-                f"         POLICY {self.verdict.upper()} [{self.rule}] "
+            ruling = (
+                f"    RULING    {self.verdict.upper()} [{self.rule}] "
                 f"-> {self.final_action}\n"
-                f"                {self.policy_explanation}"
+                f"              {self.policy_explanation}"
             )
         elif self.verdict == "defer":
-            body = (
-                f"         POLICY DEFER [{self.rule}] -> {self.scheduled_at:%d %b %H:%M}\n"
-                f"                {self.policy_explanation}"
+            ruling = (
+                f"    RULING    DEFERRED [{self.rule}] "
+                f"-> {self.scheduled_at:%d %b %H:%M}\n"
+                f"              {self.policy_explanation}"
             )
         else:
-            body = f"         allowed -> {self.final_action}"
+            ruling = "    ruling    allowed"
 
-        if self.executed:
-            if self.succeeded:
-                tail = f"         RECOVERED {money}  (cost Rs{self.cost_paise / 100:.2f})"
-            else:
-                tail = f"         no recovery  (cost Rs{self.cost_paise / 100:.2f})"
+        when = f"{self.scheduled_at:%d %b %H:%M}"
+        if self.succeeded:
+            result = f"    RESULT    {when}  RECOVERED {money}  ({cost})"
+        elif self.executed:
+            result = f"    result    {when}  no recovery  ({cost})"
+        elif self.final_action == "escalate":
+            result = f"    result    {when}  escalated to a human  ({cost})"
         else:
-            tail = f"         not executed  (cost Rs{self.cost_paise / 100:.2f})"
+            result = f"    result    {when}  stopped  ({cost})"
 
-        return "\n".join([head, diag, body, tail])
+        return "\n".join([head, diag, prop, ruling, result])
+
+    def render_compact(self) -> str:
+        flag = "!" if self.was_overruled else ("$" if self.succeeded else " ")
+        return (
+            f"{flag}[{self.seq:04d}] {self.scheduled_at:%d %b %H:%M} "
+            f"{self.payment_id} {self.amount_paise / 100:>8,.0f} "
+            f"{self.reason[:26]:<26} {self.final_action:<11} "
+            f"{self.rule}"
+        )
 
 
 @dataclass
@@ -146,10 +183,21 @@ class AuditLog:
             for e in self.entries:
                 fh.write(json.dumps(e.to_json()) + "\n")
 
-    def render(self, limit: int | None = None, only_overruled: bool = False) -> str:
+    def render(
+        self,
+        limit: int | None = None,
+        only_overruled: bool = False,
+        compact: bool = False,
+    ) -> str:
         rows = self.overruled() if only_overruled else self.entries
+        # Order by when the action ran, not when it was decided. A recovery
+        # scheduled for next Tuesday belongs next Tuesday in the log, and
+        # sequencing by decision time made the trail look scrambled.
+        rows = sorted(rows, key=lambda e: e.scheduled_at)
         if limit:
             rows = rows[:limit]
+        if compact:
+            return "\n".join(r.render_compact() for r in rows)
         return "\n\n".join(r.render() for r in rows)
 
     def summary(self) -> dict[str, object]:

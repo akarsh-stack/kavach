@@ -41,6 +41,9 @@ def main() -> int:
     ap.add_argument("--wave", type=int, default=24, help="concurrent decisions per wave")
     ap.add_argument("--audit", type=str, default="", help="dump this policy's audit trail")
     ap.add_argument("--audit-limit", type=int, default=12)
+    ap.add_argument("--audit-compact", action="store_true")
+    ap.add_argument("--audit-blocked", action="store_true",
+                    help="only decisions the policy layer overruled")
     ap.add_argument("--budget", type=int, default=0, help="batch budget in rupees, 0 = none")
     args = ap.parse_args()
 
@@ -132,7 +135,13 @@ def main() -> int:
             print(f"\nno policy named '{args.audit}'")
         else:
             print(f"\n{'=' * 78}\n  AUDIT TRAIL -- {args.audit}\n{'=' * 78}")
-            print(match.audit.render(limit=args.audit_limit))
+            print(
+                match.audit.render(
+                    limit=args.audit_limit,
+                    only_overruled=args.audit_blocked,
+                    compact=args.audit_compact,
+                )
+            )
             print(f"\n  ...{len(match.audit.entries)} decisions total")
             print(f"\n  summary: {match.audit.summary()}")
 
