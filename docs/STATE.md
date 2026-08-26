@@ -7,12 +7,21 @@ Written to be picked up cold.
 ```bash
 pip install -r requirements.txt
 python scripts/run_eval.py --engine ollama --limit 150 --no-ablation   # 0 live calls, all cached
-python -m pytest tests/ -q                                             # 60 tests
+python -m pytest tests/ -q                                             # 64 tests
 cd web && npm run install:all && npm run dev                           # :5173
 ```
 
-The decision cache is committed, so that evaluation reproduces the published
-numbers **with no API key and no GPU**. Verified: 100% cache hit, 0 live calls.
+The decision cache is committed and *replayed* when no backend is reachable, so
+that evaluation reproduces the published numbers **with no API key and no GPU**.
+Verified on a fresh clone: 1,500 decisions replayed, agent Rs 39,420, 0 live
+calls.
+
+This was broken until late: without credentials the client fell back to the
+stub, whose model name cannot match the recorded entries, so it silently
+recomputed everything with a heuristic and printed Rs 35,919 as though nothing
+were wrong. Caught only by cloning to /tmp and reading the engine column. If you
+change the prompt, the cache misses and the run **aborts** rather than
+publishing different numbers -- re-record with a live backend.
 
 ## The two surfaces
 
