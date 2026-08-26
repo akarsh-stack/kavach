@@ -124,14 +124,23 @@ class LLMUnavailable(RuntimeError):
     """A single decision could not be obtained. Recoverable: the policy stops."""
 
 
-class LLMQuotaExhausted(LLMUnavailable):
-    """The account is out of quota. NOT recoverable, and must not be swallowed.
+class FatalLLMError(LLMUnavailable):
+    """The run cannot produce valid results. Must never be swallowed.
 
-    A failed decision defaults to `stop`, so continuing past this point produces
-    a full set of results in which the agent silently did nothing -- numbers
-    that look real and are wrong. That is far worse than no numbers, so this
-    aborts the run.
+    A failed decision defaults to `stop`, so continuing past one of these
+    produces a full set of results in which the agent silently did nothing --
+    numbers that look real and are wrong. Far worse than no numbers.
+
+    This base exists because we shipped the bug twice. `LLMQuotaExhausted` was
+    made fatal, then `ReplayMiss` was added as a plain `LLMUnavailable` and was
+    quietly caught by the same `except` clause the quota fix had been written to
+    escape. A shared base means the policy layer re-raises one type, not a list
+    somebody has to remember to extend.
     """
+
+
+class LLMQuotaExhausted(FatalLLMError):
+    """The account is out of quota. Waiting will not help."""
 
 
 class LLMClient(ABC):

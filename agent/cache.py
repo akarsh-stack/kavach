@@ -47,7 +47,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from agent.llm import LLMClient, LLMUnavailable, Usage
+from agent.llm import FatalLLMError, LLMClient, LLMUnavailable, Usage
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -187,7 +187,7 @@ class CachedClient(LLMClient):
         }
 
 
-class ReplayMiss(LLMUnavailable):
+class ReplayMiss(FatalLLMError):
     """A replay run asked for a decision the cache does not hold.
 
     Fatal by design. A partial replay silently produces different numbers from

@@ -7,19 +7,44 @@ not just what to do.
 
 ## Provenance
 
-`base_td` / `base_bd` are modelled on NPCI's published Technical Decline and
-Business Decline rates (BD/TD & Uptime dashboard,
-https://www.npci.org.in/what-we-do/upi/upi-ecosystem-statistics).
+Decline rates are **derived from NPCI's published expectation, not copied from
+per-bank figures we could not verify.**
 
-> ⚠️ The specific per-bank values below are currently derived from *secondary*
-> reporting of an older NPCI snapshot, not from a primary NPCI file we parsed
-> ourselves. Replacing them with one named month's official file is the one
-> blocking item in docs/OPEN_ISSUES.md. The structure is built so that swapping
-> them is a data change, not a code change: see `load_npci_month()`.
+The citable anchor is NPCI Circular **OC-149 (June 2022)**, which sets the
+expectation that member banks hold Technical Decline below **1%** and Business
+Decline below **5%**. Those two numbers are the only hard facts we have, and
+everything here is positioned against them.
 
-What is *not* in doubt, and is what the model actually leans on: public sector
-banks show materially higher decline rates than large private banks, and NPCI
-circular OC-149 (June 2022) sets the expectation at TD < 1% and BD < 5%.
+An earlier version of this file carried specific per-bank rates (SBI 0.90%,
+ICICI 1.01%, Axis 0.60%, HDFC 0.13%) taken from secondary reporting of an older
+NPCI snapshot. Those are now removed. We attempted to replace them with a named
+month's official file from NPCI's BD/TD & Uptime dashboard and could not: the
+site returns 403 to automated fetches and redirects the statistics path to a 404
+page. Rather than ship second-hand figures dressed as primary sources, we
+removed the false precision.
+
+What survives is the part that is actually defensible:
+
+  * the OC-149 ceilings, which are published and widely cited
+  * the *direction* -- public sector banks run materially higher decline rates
+    than large private banks, which is not in dispute
+  * a stated tier position for each bank relative to those ceilings, marked
+    Tier 3 in docs/CALIBRATION.md like every other assumption
+
+This is a weaker claim than "these are the real per-bank rates", and it is the
+true one. The model behaves almost identically either way -- what changes is
+whether the README can honestly say where the numbers came from.
+
+## The definitions, from NPCI
+
+  Technical Decline (TD)  failures from system unavailability or network issues
+                          at the bank or NPCI side
+  Business Decline (BD)   failures from user or merchant causes -- wrong PIN,
+                          insufficient balance, limit exceeded, invalid
+                          beneficiary
+
+That split maps almost exactly onto our recovery taxonomy: TD is RETRY_SAME,
+BD is RETRY_LATER_FUNDS plus SWITCH_RAIL.
 
 ## The public downtime signal
 
@@ -43,10 +68,42 @@ from sim.taxonomy import Method
 
 
 class BankKind(str, Enum):
+    LARGE_PRIVATE = "large_private"
+    MID_PRIVATE = "mid_private"
     PUBLIC_SECTOR = "public_sector"
-    PRIVATE = "private"
     SMALL_FINANCE = "small_finance"
     PSP = "psp"
+
+
+# NPCI Circular OC-149 (June 2022): member banks are expected to hold Technical
+# Decline below 1% and Business Decline below 5%. These two numbers are the only
+# hard, citable facts in this module. Everything else is positioned against them.
+TD_CEILING = 0.010
+BD_CEILING = 0.050
+
+# Where each tier sits relative to those ceilings, as a fraction of each.
+#
+# TIER 3 ASSUMPTION, stated rather than smuggled in as a per-bank measurement we
+# never took. The ordering is not controversial -- large private banks run well
+# inside the ceilings, public sector banks routinely breach the TD one, small
+# finance banks are worse still. The exact fractions are ours.
+TIER_POSITION: dict[BankKind, tuple[float, float]] = {
+    BankKind.LARGE_PRIVATE: (0.22, 0.84),
+    BankKind.MID_PRIVATE: (0.62, 0.92),
+    BankKind.PUBLIC_SECTOR: (1.15, 1.18),
+    BankKind.SMALL_FINANCE: (1.65, 1.30),
+}
+
+# Outage frequency per week, by tier. Assumed, on the reasoning that a bank with
+# a worse technical decline rate has more frequent infrastructure trouble rather
+# than merely a noisier steady state.
+TIER_OUTAGE: dict[BankKind, tuple[float, float]] = {
+    # (episodes per week, P(publicly reported))
+    BankKind.LARGE_PRIVATE: (0.45, 0.84),
+    BankKind.MID_PRIVATE: (0.70, 0.74),
+    BankKind.PUBLIC_SECTOR: (1.55, 0.66),
+    BankKind.SMALL_FINANCE: (1.90, 0.50),
+}
 
 
 @dataclass(frozen=True)
@@ -54,42 +111,45 @@ class Issuer:
     code: str
     name: str
     kind: BankKind
-
-    base_td: float
-    """Technical decline rate. NPCI definition: failures from system
-    unavailability or network issues at the bank/NPCI side."""
-
-    base_bd: float
-    """Business decline rate. NPCI definition: failures from user or merchant
-    causes -- wrong PIN, insufficient balance, limit exceeded, invalid beneficiary."""
-
     volume_share: float
-    """Share of this merchant's transaction volume. Used for sampling."""
+    """Share of this merchant's transaction volume. Our assumption, for a
+    mid-size Indian D2C merchant."""
 
-    outage_rate_per_week: float
-    """OUR ASSUMPTION. Expected number of distinct downtime episodes per week.
-    Scaled off base_td on the reasoning that banks with worse technical decline
-    rates have more frequent infrastructure trouble, not merely noisier steady
-    state."""
+    @property
+    def base_td(self) -> float:
+        """Technical decline rate, derived from the OC-149 ceiling and tier."""
+        return TD_CEILING * TIER_POSITION[self.kind][0]
 
-    report_probability: float
-    """OUR ASSUMPTION. P(an outage at this issuer is publicly reported at all)."""
+    @property
+    def base_bd(self) -> float:
+        """Business decline rate, derived from the OC-149 ceiling and tier."""
+        return BD_CEILING * TIER_POSITION[self.kind][1]
+
+    @property
+    def outage_rate_per_week(self) -> float:
+        return TIER_OUTAGE[self.kind][0]
+
+    @property
+    def report_probability(self) -> float:
+        """P(an outage here is publicly reported at all)."""
+        return TIER_OUTAGE[self.kind][1]
 
 
-# NPCI-informed roster. Volume shares are our assumption for a mid-size Indian
-# D2C merchant; the decline rates are the calibrated part.
+# Roster. Only the tier and the volume share are declared -- decline rates fall
+# out of the ceilings above, so there is no per-bank number here that we would
+# have to defend as a measurement.
 ISSUERS: tuple[Issuer, ...] = (
-    Issuer("HDFC", "HDFC Bank", BankKind.PRIVATE, 0.0013, 0.041, 0.185, 0.35, 0.85),
-    Issuer("ICICI", "ICICI Bank", BankKind.PRIVATE, 0.0101, 0.046, 0.155, 0.70, 0.80),
-    Issuer("SBI", "State Bank of India", BankKind.PUBLIC_SECTOR, 0.0090, 0.058, 0.210, 1.30, 0.75),
-    Issuer("AXIS", "Axis Bank", BankKind.PRIVATE, 0.0060, 0.044, 0.120, 0.55, 0.80),
-    Issuer("KOTAK", "Kotak Mahindra Bank", BankKind.PRIVATE, 0.0031, 0.043, 0.070, 0.40, 0.80),
-    Issuer("PNB", "Punjab National Bank", BankKind.PUBLIC_SECTOR, 0.0142, 0.062, 0.075, 1.70, 0.65),
-    Issuer("BOB", "Bank of Baroda", BankKind.PUBLIC_SECTOR, 0.0125, 0.060, 0.065, 1.55, 0.65),
-    Issuer("CANARA", "Canara Bank", BankKind.PUBLIC_SECTOR, 0.0138, 0.061, 0.050, 1.65, 0.60),
-    Issuer("YES", "Yes Bank", BankKind.PRIVATE, 0.0075, 0.047, 0.035, 0.80, 0.70),
-    Issuer("IDFC", "IDFC First Bank", BankKind.PRIVATE, 0.0048, 0.045, 0.025, 0.50, 0.70),
-    Issuer("AU", "AU Small Finance Bank", BankKind.SMALL_FINANCE, 0.0165, 0.065, 0.010, 1.90, 0.50),
+    Issuer("HDFC", "HDFC Bank", BankKind.LARGE_PRIVATE, 0.185),
+    Issuer("ICICI", "ICICI Bank", BankKind.LARGE_PRIVATE, 0.155),
+    Issuer("SBI", "State Bank of India", BankKind.PUBLIC_SECTOR, 0.210),
+    Issuer("AXIS", "Axis Bank", BankKind.LARGE_PRIVATE, 0.120),
+    Issuer("KOTAK", "Kotak Mahindra Bank", BankKind.LARGE_PRIVATE, 0.070),
+    Issuer("PNB", "Punjab National Bank", BankKind.PUBLIC_SECTOR, 0.075),
+    Issuer("BOB", "Bank of Baroda", BankKind.PUBLIC_SECTOR, 0.065),
+    Issuer("CANARA", "Canara Bank", BankKind.PUBLIC_SECTOR, 0.050),
+    Issuer("YES", "Yes Bank", BankKind.MID_PRIVATE, 0.035),
+    Issuer("IDFC", "IDFC First Bank", BankKind.MID_PRIVATE, 0.025),
+    Issuer("AU", "AU Small Finance Bank", BankKind.SMALL_FINANCE, 0.010),
 )
 
 BY_CODE: dict[str, Issuer] = {i.code: i for i in ISSUERS}

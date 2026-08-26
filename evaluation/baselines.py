@@ -38,7 +38,7 @@ from datetime import datetime
 
 from agent.decide import NAIVE_SYSTEM_PROMPT, SYSTEM_PROMPT, Decision, build_user_message
 from agent.knowledge import documented_class
-from agent.llm import LLMClient, LLMQuotaExhausted, LLMUnavailable
+from agent.llm import FatalLLMError, LLMClient, LLMUnavailable
 from agent.observe import Observation
 from agent.policy import Proposal
 from core.actions import Action, Channel
@@ -240,9 +240,11 @@ class LLMPolicy(Policy):
             d: Decision = self.client.complete(
                 self.system_prompt, build_user_message(obs), Decision
             )
-        except LLMQuotaExhausted:
-            # Deliberately NOT caught. Continuing would produce a complete set
-            # of results in which the agent quietly did nothing.
+        except FatalLLMError:
+            # Deliberately NOT caught -- quota exhaustion, a stale replay cache,
+            # anything that means this run cannot produce valid results.
+            # Continuing would yield a complete set of numbers in which the
+            # agent quietly did nothing.
             raise
         except LLMUnavailable:
             # A model failure must not silently become a recovery decision.
