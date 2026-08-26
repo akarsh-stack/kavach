@@ -20,11 +20,12 @@ a reviewer finding one we hid.
   2 of 3. Extending to 300+ is the single highest-value next run, and the cache
   makes the first 150 free.
 
-- [ ] **NPCI figures are second-hand.** `sim/issuers.py` per-bank decline rates
-  come from secondary reporting of an older NPCI snapshot. Must be replaced with
-  a specific month's official file from the NPCI BD/TD & Uptime dashboard, cited
-  by filename and month. Until then `docs/CALIBRATION.md` §2.4 carries a
-  warning. — *owner: day 3*
+- [x] ~~**NPCI figures are second-hand.**~~ Resolved by removing them. NPCI
+  blocks automated access (403 on fetch, 404 redirect in a browser), so the
+  primary file could not be obtained. Rather than ship secondary reporting
+  dressed as sourced, per-bank precision is gone: rates now derive from the
+  OC-149 ceilings (TD<1%, BD<5%) plus a stated tier position marked Tier 3.
+  See `docs/CALIBRATION.md` §2.4.
 
 ## Known limitations, will ship with them
 

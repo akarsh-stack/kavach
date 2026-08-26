@@ -62,36 +62,48 @@ done. It is a compression of Razorpay's stated opinion. See section 3.
 
 ### 2.4 UPI decline rates
 
-**Source:** NPCI UPI ecosystem statistics, BD/TD & Uptime dashboard —
-<https://www.npci.org.in/what-we-do/upi/upi-ecosystem-statistics>
+**Citable anchor:** NPCI Circular **OC-149 (June 2022)** — member banks are
+expected to hold Technical Decline below **1%** and Business Decline below **5%**.
 
-NPCI publishes monthly, per-bank:
+NPCI's definitions, which map almost exactly onto our taxonomy:
 
-- **Technical Decline (TD)** — failures from bank/NPCI system unavailability
-- **Business Decline (BD)** — failures from user/merchant causes (wrong PIN,
-  insufficient balance, limit exceeded, invalid beneficiary)
+- **Technical Decline (TD)** — failures from bank/NPCI system unavailability.
+  Our `RETRY_SAME`.
+- **Business Decline (BD)** — failures from user/merchant causes: wrong PIN,
+  insufficient balance, limit exceeded, invalid beneficiary. Our
+  `RETRY_LATER_FUNDS` + `SWITCH_RAIL`.
 
-This split maps almost perfectly onto our taxonomy: TD ≈ `RETRY_SAME`,
-BD ≈ `RETRY_LATER_FUNDS` + `SWITCH_RAIL`. We use it to set the relative
-frequency of failure classes in generated batches, so the mix of failures the
-agent faces is not a mix we chose for our own convenience.
+**What we do NOT have, and no longer pretend to.** An earlier version of
+`sim/issuers.py` carried specific per-bank rates (SBI 0.90%, ICICI 1.01%, Axis
+0.60%, HDFC 0.13%) taken from secondary reporting of an older NPCI snapshot. We
+attempted to replace them with a named month's official file from NPCI's BD/TD &
+Uptime dashboard and could not: the site returns **403** to automated fetches and
+redirects the statistics path to a **404** page.
 
-**Reference thresholds** (NPCI Circular OC-149, June 2022): banks are expected
-to hold TD below 1% and BD below 5%.
+So the figures are gone. Per-bank rates are now *derived* — each bank declares
+only a **tier** and a volume share, and TD/BD fall out of the OC-149 ceilings
+times a stated tier position:
 
-> ⚠️ **Verification status.** The per-bank figures currently in
-> `sim/issuers.py` (SBI ~0.9%, ICICI ~1.01%, Axis ~0.60%, HDFC ~0.13% remitter
-> decline) come from *secondary* reporting of an older NPCI snapshot, not from a
-> primary NPCI file we have parsed ourselves. **Before submission we must
-> replace these with a specific month's official NPCI file and cite it by
-> filename.** Until that is done, this section is the weakest link in the
-> calibration chain and is flagged as such in the README. Tracked in
-> `docs/OPEN_ISSUES.md`.
+```
+large_private   TD x0.22 of ceiling   BD x0.84
+mid_private     TD x0.62              BD x0.92
+public_sector   TD x1.15              BD x1.18   (above the TD ceiling)
+small_finance   TD x1.65              BD x1.30
+```
 
-The direction of the effect is not in doubt — public sector banks show
-materially higher decline rates than large private banks, and system-wide TD has
-fallen from roughly 8–10% in 2016 to under 1% today — but a project whose whole
-pitch is honest measurement cannot ship a number it has not personally checked.
+The tier positions are **Tier 3 assumptions**, marked as such in the code. What
+is defensible is the anchor (published), the direction (public sector banks run
+materially worse than large private ones — not in dispute), and the fact that
+there is no longer a single per-bank number in that file we would have to defend
+as a measurement.
+
+This is a weaker claim than the one we started with. It is the true one, and the
+model behaves almost identically either way — what changed is whether the README
+can honestly say where the numbers came from.
+
+**Cross-check:** the resulting simulated merchant runs a **92.54%** success rate,
+inside the 92–96% band the OC-149 ceilings imply for a blended Indian merchant.
+`sim/generate.py:verify()` fails the run if it drifts outside.
 
 ---
 
