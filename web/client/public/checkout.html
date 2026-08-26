@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Live failure probe — Razorpay test mode</title>
+  <style>
+    body { background:#0a0b0f; color:#f2f3f7; font-family:system-ui,sans-serif;
+           display:grid; place-items:center; height:100vh; margin:0; }
+    .card { background:#14151c; border:1px solid rgba(255,255,255,.08);
+            border-radius:14px; padding:32px; max-width:520px; }
+    h1 { font-size:18px; margin:0 0 8px; }
+    p  { color:#a2a6b8; font-size:13.5px; line-height:1.6; }
+    code { background:#1c1e27; padding:2px 6px; border-radius:4px;
+           font-family:ui-monospace,monospace; font-size:12px; }
+    button { margin-top:20px; background:#4363d8; color:#fff; border:0;
+             border-radius:8px; padding:11px 20px; font-size:14px; cursor:pointer; }
+    .ok { color:#2fbf71; } .bad { color:#f0576b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Live failure probe</h1>
+    <p>Razorpay <strong>test mode</strong>. This opens the real Checkout against a
+       real order. Pick a card, then choose <strong>Failure</strong> on the
+       simulator screen — that produces a genuine failed payment with a real
+       error payload.</p>
+    <p>Order: <code id="oid">loading…</code></p>
+    <button id="pay">Open Razorpay Checkout</button>
+    <p id="out"></p>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get("order");
+    const keyId   = params.get("key");
+    const amount  = params.get("amount") || 49900;
+    document.getElementById("oid").textContent = orderId || "(missing ?order=)";
+
+    document.getElementById("pay").onclick = () => {
+      const rzp = new Razorpay({
+        key: keyId,
+        order_id: orderId,
+        amount: Number(amount),
+        currency: "INR",
+        name: "Bounded Revenue Recovery",
+        description: "Live failure probe (test mode)",
+        prefill: { email: "probe@example.com", contact: "9999999999" },
+        handler: (r) => {
+          document.getElementById("out").innerHTML =
+            '<span class="ok">Payment SUCCEEDED: ' + r.razorpay_payment_id +
+            '</span><br>Re-run and choose <strong>Failure</strong> on the simulator.';
+        },
+      });
+      rzp.on("payment.failed", (r) => {
+        const e = r.error || {};
+        document.getElementById("out").innerHTML =
+          '<span class="bad">Payment FAILED (this is what we want)</span><br>' +
+          '<code>' + (e.reason || "?") + '</code> — ' + (e.description || "") +
+          '<br>payment: <code>' + ((e.metadata||{}).payment_id || "?") + '</code>';
+      });
+      rzp.open();
+    };
+  </script>
+</body>
+</html>

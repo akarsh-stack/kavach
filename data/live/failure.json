@@ -1,0 +1,47 @@
+{
+  "_note": "Real Razorpay test-mode failure, captured by scripts/live_probe.py. Payer email, phone and card identifiers redacted -- this file is public and none of it is needed to prove the schema or the reason string.",
+  "acquirer_data": {
+    "auth_code": null
+  },
+  "amount": 49900,
+  "amount_refunded": 0,
+  "bank": null,
+  "captured": false,
+  "card": {
+    "entity": "card",
+    "id": "card_REDACTED",
+    "international": true,
+    "last4": "1111",
+    "name": "REDACTED",
+    "network": "Visa",
+    "sub_type": "consumer",
+    "type": "debit"
+  },
+  "card_id": "card_REDACTED",
+  "contact": "+91XXXXXXXXXX",
+  "created_at": 1787746216,
+  "currency": "INR",
+  "description": "Live failure probe (test mode)",
+  "email": "redacted@example.com",
+  "entity": "payment",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Your payment could not be completed as this business accepts domestic (Indian) card payments only. Try another payment method.",
+  "error_reason": "international_transaction_not_allowed",
+  "error_source": "business",
+  "error_step": "payment_initiation",
+  "fee": null,
+  "id": "pay_TUORtBOxc2nlNA",
+  "international": true,
+  "invoice_id": null,
+  "method": "card",
+  "notes": {
+    "source": "bounded-revenue-recovery"
+  },
+  "order_id": "order_TUONlb9wkqLIl0",
+  "refund_status": null,
+  "status": "failed",
+  "tax": null,
+  "token_id": null,
+  "vpa": null,
+  "wallet": null
+}
