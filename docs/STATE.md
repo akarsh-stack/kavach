@@ -100,9 +100,16 @@ than silently degrading every decision to `stop`.
 
 ## Traps already hit — do not re-learn these
 
-- **`data/runs/latest.json` is gitignored scratch.** The committed result is
-  `reference.json`, and the server falls back `latest → reference`. A dashboard
-  run overwrote the citable artifact twice before this split existed.
+- **The console reads `reference.json`, never `latest.json`.** `latest` is
+  scratch, gitignored, and written by any run -- including ones nobody started.
+  It only appears on screen after *you* press Run. Earlier the console defaulted
+  to `latest` and stray spawns silently changed what it displayed.
+- **Starting a run is POST `/api/evaluate`; watching one is GET `/api/stream`.**
+  Never merge them. EventSource speaks only GET and reconnects on every blip, so
+  a GET with a spawn behind it re-runs the job. This bit twice: the first fix
+  guarded against *concurrent* runs, which did not help, because a reconnect
+  after completion simply started a fresh one. Five evaluations spawned that
+  nobody asked for.
 - **A `--no-llm` run will overwrite `reference.json`** if you pass
   `--save reference`. It happened. The cache made recovery free, but check what
   you are overwriting.

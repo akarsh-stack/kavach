@@ -42,10 +42,19 @@ export default function App() {
   const [limit, setLimit] = useState(300);
   const [dismissed, setDismissed] = useState(false);
   const [tab, setTab] = useState("console");
+  const [source, setSource] = useState("reference");
 
-  const load = useCallback(async () => {
+  // Default to the COMMITTED result, not the scratch one.
+  //
+  // `latest` is whatever ran most recently, including runs nobody meant to
+  // start. Showing it by default meant a stray spawn could silently change what
+  // the dashboard displays -- and it did, repeatedly. `reference` is the run in
+  // git, so a fresh visitor always sees the numbers the README claims. We only
+  // switch to `latest` after a run the user actually started.
+  const load = useCallback(async (which = "reference") => {
     try {
-      setRun(await getRun("latest"));
+      setRun(await getRun(which));
+      setSource(which);
       setError("");
     } catch (e) {
       setError(String(e.message || e));
@@ -70,7 +79,7 @@ export default function App() {
       (l) => setLog((prev) => [...prev, l]),
       async () => {
         setRunning(false);
-        await load();
+        await load("latest");
       },
     );
   };
@@ -88,10 +97,9 @@ export default function App() {
           <h1>Bounded revenue recovery</h1>
           <p className="sub">
             {run
-              ? `${run.workflow?.policy ?? "agent"} · ${run.batch_size} failed payments · ` +
-                `${run.workflow?.engine ?? "?"} · ${new Date(
-                  run.generated_at,
-                ).toLocaleString()}`
+              ? `${source} · ${run.workflow?.policy ?? "agent"} · ` +
+                `${run.batch_size} payments · ${run.workflow?.engine ?? "?"} · ` +
+                new Date(run.generated_at).toLocaleString()
               : "loading…"}
           </p>
         </div>

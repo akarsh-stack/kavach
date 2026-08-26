@@ -11,20 +11,36 @@ export const getRun = (name = "latest") => j(`/api/run/${name}`);
 export const getSensitivity = () => j("/api/sensitivity");
 export const listRuns = () => j("/api/runs");
 
-/** Stream an evaluation. Returns an unsubscribe function. */
-export function evaluate({ limit, seed, engine }, onLog, onDone) {
+/**
+ * Start an evaluation, then watch it.
+ *
+ * POST starts; the SSE stream only observes. EventSource speaks GET and
+ * reconnects on every blip, so a GET with a side effect behind it re-runs the
+ * job -- which silently spawned five evaluations before this split existed.
+ */
+export async function evaluate({ limit, seed, engine }, onLog, onDone) {
   const qs = new URLSearchParams({ limit, seed, engine });
-  const es = new EventSource(`/api/evaluate?${qs}`);
-  es.addEventListener("log", (e) => onLog(JSON.parse(e.data)));
-  es.addEventListener("done", (e) => {
-    onDone(JSON.parse(e.data));
+  const started = await fetch(`/api/evaluate?${qs}`, { method: "POST" });
+  if (!started.ok) {
+    const body = await started.json().catch(() => ({}));
+    onDone({ code: -1, error: body.error || started.statusText });
+    return () => {};
+  }
+
+  const es = new EventSource("/api/stream");
+  let finished = false;
+  const finish = (payload) => {
+    if (finished) return;
+    finished = true;
     es.close();
-  });
-  es.onerror = () => {
-    onDone({ code: -1 });
-    es.close();
+    onDone(payload);
   };
-  return () => es.close();
+
+  es.addEventListener("log", (e) => onLog(JSON.parse(e.data)));
+  es.addEventListener("done", (e) => finish(JSON.parse(e.data)));
+  es.addEventListener("idle", () => finish({ code: 0 }));
+  es.onerror = () => finish({ code: -1 });
+  return () => finish({ code: -1 });
 }
 
 /* -------------------------------------------------------------------------

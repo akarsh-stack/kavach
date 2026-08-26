@@ -19,6 +19,7 @@ import express from "express";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, "..", "..");
 const RUNS = path.join(REPO, "data", "runs");
+
 // Deliberately API_PORT, not PORT. Dev harnesses commonly inject PORT for the
 // UI process, and inheriting it here makes the API silently squat on the
 // frontend's port -- which fails as a confusing "Cannot GET /" rather than as
@@ -33,10 +34,10 @@ const readRun = (name) => {
   const file = path.join(RUNS, `${name}.json`);
   if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf-8"));
 
-  // `latest` is a scratch artifact -- gitignored, and overwritten by any run
+  // `latest` is a scratch artefact -- gitignored, and overwritten by any run
   // triggered from the dashboard. `reference` is the committed result the repo
   // ships. Falling back means a fresh clone shows real numbers immediately,
-  // and a stub run started from the UI can never clobber the citable one.
+  // and a scratch run started from the UI can never clobber the citable one.
   if (name === "latest") {
     const ref = path.join(RUNS, "reference.json");
     if (fs.existsSync(ref)) return JSON.parse(fs.readFileSync(ref, "utf-8"));
@@ -53,11 +54,10 @@ app.get("/api/runs", (_req, res) => {
   const runs = fs
     .readdirSync(RUNS)
     .filter((f) => f.endsWith(".json"))
-    .map((f) => {
-      const stem = f.replace(/\.json$/, "");
-      const stat = fs.statSync(path.join(RUNS, f));
-      return { name: stem, modified: stat.mtime.toISOString() };
-    })
+    .map((f) => ({
+      name: f.replace(/\.json$/, ""),
+      modified: fs.statSync(path.join(RUNS, f)).mtime.toISOString(),
+    }))
     .sort((a, b) => b.modified.localeCompare(a.modified));
   res.json({ runs });
 });
@@ -74,18 +74,25 @@ app.get("/api/sensitivity", (_req, res) => {
   res.json(data);
 });
 
-/**
- * One evaluation at a time, ever.
- *
- * This guard exists because of a bug we hit rather than one we anticipated: an
- * `EventSource` reconnects automatically when its connection drops, and every
- * reconnect re-issues the GET. With a process spawn behind that GET, restarting
- * the server mid-stream silently kicked off a fresh evaluation nobody asked
- * for -- which then overwrote data/runs/latest.json with different numbers.
- *
- * Any SSE endpoint with a side effect has this problem. A second caller now
- * attaches to the running job's output instead of starting a second one.
- */
+/* ===========================================================================
+   Running an evaluation
+   ===========================================================================
+
+   Starting a run is a POST. Watching one is a GET. They are separate
+   endpoints, and that separation is the entire point.
+
+   `EventSource` speaks only GET, and it reconnects automatically whenever the
+   stream drops -- so a GET that spawns a process gets re-run on every blip. We
+   hit this twice. The first fix guarded against *concurrent* runs, which was
+   not enough: a reconnect after a run had finished simply started a fresh one,
+   and the dashboard silently spawned five evaluations nobody asked for,
+   overwriting the results file each time.
+
+   Now the side effect is not reachable by the method EventSource speaks. A
+   reconnect re-attaches to the stream and finds either a running job or
+   nothing at all.
+   ========================================================================= */
+
 let job = null; // { proc, listeners:Set<res>, lines:string[], args }
 
 const broadcast = (event, data) => {
@@ -103,41 +110,17 @@ const sseHeaders = (res) => {
   res.flushHeaders();
 };
 
-app.get("/api/job", (_req, res) => {
-  res.json({ running: Boolean(job), args: job?.args ?? null });
-});
-
 /**
- * Trigger an evaluation and stream stdout back as Server-Sent Events.
- *
- * Arguments are whitelisted rather than passed through. This endpoint spawns a
- * process, so accepting arbitrary flags from the client would be a command
- * injection surface -- on a dashboard whose entire subject is payment security,
- * that would be a poor look as well as a real bug.
+ * Arguments are whitelisted, never passed through. This spawns a process, so
+ * accepting arbitrary flags would be a command-injection surface -- on a
+ * dashboard whose subject is payment security, that would be a poor look as
+ * well as a real bug.
  */
-app.get("/api/evaluate", (req, res) => {
-  // Attach to the in-flight run rather than starting a competing one.
-  if (job) {
-    sseHeaders(res);
-    job.listeners.add(res);
-    res.write(
-      `event: attached\ndata: ${JSON.stringify({ args: job.args })}\n\n`
-    );
-    for (const line of job.lines) {
-      res.write(`event: log\ndata: ${JSON.stringify({ stream: "out", line })}\n\n`);
-    }
-    req.on("close", () => job?.listeners.delete(res));
-    return;
-  }
-  return startJob(req, res);
-});
-
-function startJob(req, res) {
-  const limit = String(parseInt(req.query.limit, 10) || 300);
-  const seed = String(parseInt(req.query.seed, 10) || 42);
-  const engine = ["none", "ollama", "anthropic", "stub"].includes(req.query.engine)
-    ? req.query.engine
-    : "none";
+function buildArgs(query) {
+  const limit = String(parseInt(query.limit, 10) || 300);
+  const seed = String(parseInt(query.seed, 10) || 42);
+  const allowed = ["none", "ollama", "gemini", "groq", "anthropic", "stub"];
+  const engine = allowed.includes(query.engine) ? query.engine : "none";
 
   const args = [
     path.join(REPO, "scripts", "run_eval.py"),
@@ -147,15 +130,14 @@ function startJob(req, res) {
   ];
   if (engine === "none") args.push("--no-llm");
   else if (engine === "stub") args.push("--stub");
-  else args.push("--engine", engine);
+  else args.push("--engine", engine, "--no-ablation");
+  return args;
+}
 
-  sseHeaders(res);
-
+function startJob(args) {
   const py = spawn(process.env.PYTHON || "python", args, { cwd: REPO });
-  job = { proc: py, listeners: new Set([res]), lines: [], args: args.slice(1) };
+  job = { proc: py, listeners: new Set(), lines: [], args: args.slice(1) };
   console.log(`[evaluate] spawn: ${args.slice(1).join(" ")}`);
-
-  broadcast("start", { args: job.args });
 
   let buffer = "";
   const pump = (chunk, stream) => {
@@ -184,12 +166,37 @@ function startJob(req, res) {
     broadcast("log", { stream: "err", line: `failed to spawn python: ${err.message}` });
     finish(-1);
   });
-
-  // A client hanging up must NOT kill the run. Killing it here was the other
-  // half of the reconnect bug: the dropped connection aborted the evaluation
-  // and the reconnect started a fresh one.
-  req.on("close", () => job?.listeners.delete(res));
 }
+
+/** Start a run. POST, so EventSource can never replay it. */
+app.post("/api/evaluate", (req, res) => {
+  if (job) {
+    return res.status(409).json({ error: "a run is already in progress", args: job.args });
+  }
+  startJob(buildArgs(req.query));
+  res.json({ started: true, args: job.args });
+});
+
+/** Observe the current run. No side effect; safe to reconnect at will. */
+app.get("/api/stream", (req, res) => {
+  sseHeaders(res);
+  if (!job) {
+    res.write("event: idle\ndata: {}\n\n");
+    res.end();
+    return;
+  }
+  job.listeners.add(res);
+  res.write(`event: attached\ndata: ${JSON.stringify({ args: job.args })}\n\n`);
+  for (const line of job.lines) {
+    res.write(`event: log\ndata: ${JSON.stringify({ stream: "out", line })}\n\n`);
+  }
+  // A client hanging up must not kill the run.
+  req.on("close", () => job?.listeners.delete(res));
+});
+
+app.get("/api/job", (_req, res) => {
+  res.json({ running: Boolean(job), args: job?.args ?? null });
+});
 
 app.listen(PORT, () => {
   console.log(`recovery-agent api  http://localhost:${PORT}`);
