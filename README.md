@@ -2,115 +2,151 @@
 
 **Razorpay Buildathon — Track 03, AI Revenue Recovery**
 
-An agent that takes a batch of failed Razorpay payments, diagnoses each root
-cause, chooses a bounded recovery action, and proves it recovered more money
-than four competing policies — **net of the cost of trying**.
+An agent that works a queue of failed Razorpay payments: diagnoses each root
+cause, chooses a bounded recovery action, escalates what needs a human, and
+stops when stopping is the right answer.
 
-The interesting part is not the agent. It is the measurement around it.
+Then it proves the whole thing against four competing policies — **net of the
+cost of trying**.
 
 ---
 
 ## The brief, clause by clause
 
+> *"Build an agent that detects revenue at risk, determines the right
+> intervention, and executes a bounded recovery workflow."*
+>
 > *"Don't just identify the problem. Show measured money recovered across a
 > batch, with compliant escalation, stopping rules, and an audit trail."*
 
-| The bar asks for | Where it lives | What it does |
-|---|---|---|
-| measured money recovered across a batch | [`evaluation/harness.py`](evaluation/harness.py) | 6 policies, same batch, same seed, same luck |
-| compliant escalation | [`agent/policy.py`](agent/policy.py) | risk → risk review, integration bugs → engineering, once per bug |
-| stopping rules | [`agent/policy.py`](agent/policy.py) | 8 ordered rules that **veto, defer or substitute** the model's proposal |
-| an audit trail | [`agent/audit.py`](agent/audit.py) | records what was **prevented**, not just what ran |
+| The bar asks for | Where you see it |
+|---|---|
+| detects revenue at risk | Recovery console — ₹1,61,600 unresolved, ranked by what wants attention |
+| determines the right intervention | per-payment diagnosis + the model's own rationale |
+| executes a bounded recovery workflow | the step timeline on every payment |
+| compliant escalation | **18** payments routed to a human, each with a stated cause |
+| stopping rules | 8 ordered rules in [`agent/policy.py`](agent/policy.py) that **veto, defer or substitute** the model |
+| an audit trail | [`agent/audit.py`](agent/audit.py) — records what was **prevented**, not just what ran |
+| measured money recovered | 5 policies, same batch, same seed, same luck |
 
 ---
 
-## 60-second quickstart
+## Two surfaces
 
-Everything below runs with **no API key and no model**. The three non-LLM
-policies need neither, and the model-driven ones replay from the committed cache.
+**Recovery console** — the product. A work queue: what's at risk, what the agent
+diagnosed, what it's doing, what it recovered, what needs you. Expand a payment
+to see the bounded workflow it executed and any point the policy layer overruled
+the model.
 
-```bash
-pip install pydantic pytest
-python scripts/inspect_batch.py        # generate a batch, verify its calibration
-python scripts/run_eval.py --no-llm    # compare the credential-free policies
-python scripts/run_sensitivity.py      # does the conclusion survive our assumptions?
-python -m pytest tests/ -q             # 64 tests, including the boundary proof
-```
-
-The dashboard:
+**Evidence** — the five-policy comparison, cost breakdown, diagnosis accuracy and
+sensitivity sweep. *Why you should believe the console.*
 
 ```bash
-cd web && npm run install:all && npm run dev
+cd web && npm run install:all && npm run dev     # :5173
 ```
 
-React on `:5173`, Express on `:5174`. The **run evaluation** button executes the
-real Python pipeline and streams its output live.
+---
+
+## Quickstart
+
+```bash
+pip install -r requirements.txt
+python scripts/inspect_batch.py                              # generate + verify calibration
+python scripts/run_eval.py --engine ollama --limit 150 --no-ablation
+python scripts/run_sensitivity.py --engine ollama --subject agent
+python -m pytest tests/ -q                                   # 64 tests
+```
+
+**No API key needed.** When no backend is reachable the client *replays* the
+committed decision cache:
+
+```
+[llm] Ollama unavailable: model 'qwen2.5:7b' unavailable
+      replaying 1655 recorded decisions from gpt-oss:120b
+running agent      net Rs 40,849   (0 live calls, disk cache 100%)
+running naive_llm  net Rs -34,119  (0 live calls, disk cache 100%)
+```
+
+To run live instead, copy `.env.example` to `.env` and fill in **any one** of
+`GEMINI_API_KEY`, `GROQ_API_KEY`, `OLLAMA_API_KEY` or `ANTHROPIC_API_KEY`.
 
 ---
 
 ## The result
 
-150 failed payments, ₹192,658 at risk, ₹165,146 of it theoretically recoverable.
-Decisions by `gpt-oss:120b` via Ollama Cloud, served from the committed cache.
+150 failed payments, ₹2,05,462 at risk, ₹1,76,982 theoretically recoverable.
+Decisions by `gpt-oss:120b` via Ollama Cloud.
 
 ```
 policy                 engine     net Rs   direct Rs   gross Rs   expo Rs   viol   wasted
-agent                  ollama     39,420      39,420     42,341         0      0        0
-agent_no_guardrails *  ollama     39,407      39,407     42,341         0      0        0
-rules_engine           rules      35,970      35,970     38,673         0      0        0
-fixed_retry *          none       32,007      36,057     36,995     4,050     48       48
+agent                  ollama     40,849      40,849     43,862         0      0        0
+rules_engine           rules      37,437      37,437     40,193         0      0        0
+fixed_retry *          none       33,605      37,655     38,627     4,050     48       48
 no_retry               none            0           0          0         0      0        0
-naive_llm *            ollama    -39,640     -31,240     38,752     8,400    607       57
+naive_llm *            ollama    -34,119     -25,719     46,738     8,400    603       56
 
 * runs without guardrails, by design
 ```
 
 **The agent beats the rules engine — Razorpay's own published guidance,
-competently implemented — by 9.6% net, with zero policy violations and zero
+competently implemented — by 9.1% net, with zero policy violations and zero
 wasted attempts.**
 
 Three results matter more than that one.
 
-### The obvious approach is worse than doing nothing
+### 1. The obvious approach is worse than doing nothing
 
 `naive_llm` is an LLM, the error string, and "recover the revenue" — the typical
-hackathon submission. It recovered ₹38,752 gross, right alongside everyone else.
-Then it destroyed **₹18,564 in goodwill and ₹49,500 in churn**, committed **607
-policy violations**, and hit the event cap on 100 of 150 payments because it
-never stops.
+hackathon submission. **Same model as our agent.** It recovered ₹46,738 gross,
+*more than anyone else*.
 
-Net: **−₹39,640.** Same model as our agent. The difference is entirely the
-economics, the stopping rules and the guardrails.
+Then it destroyed **₹18,564 in goodwill and ₹49,500 in churn**, committed **603
+policy violations**, and hit the event cap on most of the batch because it never
+stops.
 
-### The guardrails gained ₹12 and prevented nothing
+Net: **−₹34,119.** The difference between that and ₹40,849 is entirely the
+economics, the stopping rules and the guardrails — not the model.
 
-Not the result we expected, and we are not dressing it up. On this batch the
-model never proposed a blocked action, so the policy layer never fired.
+### 2. The guardrails made an entire axis of risk inapplicable
 
-The honest reading: the case for the guardrails is that they **bound the worst
-case**, not that they improve the average. `naive_llm` is what the worst case
-looks like with the same model behind it.
+Not the argument we expected. On this batch the model never proposed a blocked
+action, so the policy layer never fired — it gained ₹12 and prevented nothing.
 
-### Where the model actually earns its place
+But look at the compliance-exposure axis of the sensitivity sweep:
+
+```
+compliance     x0.0     agent 40,849    fixed_retry 37,655
+exposure       x1.0     agent 40,849    fixed_retry 33,605
+               x5.0     agent 40,849    fixed_retry 17,405
+```
+
+**The agent's net does not move.** It commits zero violations, so exposure is a
+cost it never incurs. Every other policy's number swings with the price of a
+compliance breach; ours has none to price.
+
+The guardrails didn't improve the average. They **bounded the worst case** —
+and `naive_llm`, the same model without them, is what that worst case looks like.
+
+### 3. Where the model actually earns its place
 
 ```
                   overall    n     held-out   n    ambiguous   n
-rules_engine       95.9%    147       0.0%    0       14.3%    7
-agent              95.3%    150      66.7%    3       14.3%    7
+rules_engine       95.2%    147       0.0%    0       30.0%   10
+agent              94.7%    150      66.7%    3       30.0%   10
 ```
 
 On **held-out** reasons — absent from the rulebook entirely — the agent scores
 66.7% where the rules engine scores nothing, because it has no mapping and
-structurally cannot. That is the gap the design predicted. **But n = 3.**
+structurally cannot. **But n = 3.**
 
-On **ambiguous** `payment_failed`, both manage 1 of 7. Both bad. The contextual
-inference we claimed is not yet demonstrated, and a larger batch is the next
-thing this project needs.
+On **ambiguous** `payment_failed`, both manage 30.0%. The contextual inference we
+predicted the model would show is **not demonstrated** — it ties the lookup
+table. A larger batch is the next thing this project needs.
 
 ### Does the lift survive our assumptions?
 
-Mostly. `python scripts/run_sensitivity.py --engine ollama --subject agent`
-sweeps 36 combinations of the three softest numbers in the model.
+`python scripts/run_sensitivity.py --engine ollama --subject agent` sweeps 36
+combinations of the three softest numbers in the model.
 
 **The agent wins 33 of 36.** All three losses are at `annoyance ×10`, where
 over-contacting costs ten times our estimate — at that price messaging stops
@@ -122,15 +158,6 @@ everywhere except annoyance x10 : 27 / 27
 at annoyance x10                :  6 /  9
 ```
 
-The agent's net is **identical at every point on the compliance-exposure axis**
-— ₹40,849 at ×0, ×1 and ×5 — because it commits zero violations, so exposure is
-a cost it never incurs. The same axis swings `fixed_retry` from ₹37,655 down to
-₹17,405.
-
-That is the strongest argument for the guardrails here, and not the one we
-expected: they did not improve the average, they made an entire axis of
-regulatory risk **inapplicable**.
-
 **Magnitude is not defensible, only direction.** Across the grid the lift ranges
 −18.8% to +11.2%, so we quote no single lift percentage anywhere.
 
@@ -141,8 +168,7 @@ Full grid: [`docs/CALIBRATION.md` §5.4.1](docs/CALIBRATION.md).
 ## Why you can believe the numbers
 
 Every simulated benchmark faces the same objection: *you wrote the simulator and
-the agent, so of course the agent wins*. Usually that objection is correct. Five
-things are in place so that it is not.
+the agent, so of course the agent wins*. Usually that objection is correct.
 
 ### 1. The failure taxonomy is real, not invented
 
@@ -150,23 +176,18 @@ All **66 error reasons** in [`sim/taxonomy.py`](sim/taxonomy.py) are transcribed
 verbatim from
 [razorpay.com/docs/errors/payments/list](https://razorpay.com/docs/errors/payments/list/)
 — the `reason` string, Razorpay's description, and Razorpay's own **"Next
-Steps"**. That last column is, in effect, a published recovery policy written by
-the payments company we are building for, so our recovery classes are a
-compression of *their* stated opinion rather than ours.
-
-A reviewer can check it against their docs, line by line.
+Steps"**. That last column is a published recovery policy written by the payments
+company we are building for, so our recovery classes compress *their* stated
+opinion, not ours. A reviewer can check it line by line.
 
 ### 2. The agent provably cannot see the answer key
 
-Hidden state lives in a private dict on `World`, keyed by payment ID. Nothing the
-agent can reach holds a reference to it.
+Hidden state lives in a private dict on `World`. Nothing the agent can reach
+holds a reference to it, and `tests/test_observability_boundary.py` walks the AST
+of every file under `agent/` and fails the build on any import from `sim/`, any
+attribute read of a private name, or a `getattr` used to evade both.
 
-That is not a convention — it is enforced. `tests/test_observability_boundary.py`
-walks the AST of every file under `agent/` and fails the build on any import
-from `sim/`, any attribute read of a private name, and any `getattr` used to
-sneak past both.
-
-We checked the test can fail. Injecting `from sim.world import Truth` into
+We checked the test can fail — injecting `from sim.world import Truth` into
 `agent/observe.py`:
 
 ```
@@ -179,63 +200,35 @@ FAILED tests/test_observability_boundary.py::test_agent_never_imports_sim
 
 Random draws are keyed by *what they are a draw about* —
 `(payment_id, purpose, attempt_no)` — hashed with the run seed, rather than
-pulled from a shared stream.
+pulled from a shared stream. With one stream, policies consume draws at different
+rates and by the tenth payment are being scored against different luck; a 5%
+"lift" could be pure variance. Keyed draws mean a policy that wins, won on
+judgement.
 
-This matters more than it sounds. With one stream, policies consume draws at
-different rates, so by the tenth payment two policies are being scored against
-completely different luck and a 5% "lift" could be pure variance. With common
-random numbers, the roll deciding *"does attempt 2 on pay_00042 succeed"* is the
-same under every policy. A policy that wins, won on judgement.
+### 4. You can reproduce it without a model
 
-### 4. You can reproduce the model-driven numbers without a model
+Every backend runs at `temperature 0`, so the model is a deterministic function
+of its inputs and [`agent/cache.py`](agent/cache.py) memoises decisions keyed on
+`(model, schema, system prompt, user message)`. **The cache is committed and
+replayed when no backend is reachable** — verified on a fresh clone: 1,655
+decisions replayed, the published numbers exactly, 0 live calls.
 
-Every backend runs at `temperature 0`, which makes the model a deterministic
-function of its inputs — so [`agent/cache.py`](agent/cache.py) memoises decisions
-to disk, keyed on `(model, schema, system prompt, user message)`. Any change to
-the prompt or the observation is a different key and a real call; there is no
-way to silently serve a stale decision.
+A replay *miss* is fatal, not silent. A partial replay would publish different
+numbers from the recorded ones, which is precisely what this exists to prevent.
 
-**That cache is committed**, and when no backend is reachable the client
-*replays* it rather than falling back to the stub. So a reviewer with no API key
-and no GPU can clone this repo, run the evaluation, and get our exact numbers
-including the LLM policies:
-
-```
-[llm] Ollama unavailable: model 'qwen2.5:7b' unavailable
-      replaying 1500 recorded decisions from gpt-oss:120b
-running agent      net Rs 39,420   (0 live calls, disk cache 100%)
-running naive_llm  net Rs -39,640  (0 live calls, disk cache 100%)
-```
-
-A replay *miss* is fatal rather than silent: a partial replay would publish
-different numbers from the recorded ones, which is precisely what this mechanism
-exists to prevent.
-
-It also makes the sweep affordable. Measured on a 27-point grid over the agent:
-
-```
-without the cache: 4,329 model calls
-with it:             164        (96.2% hit rate)
-```
-
-Entries record which model produced them, so a cached stub decision can never
-launder itself into a run labelled as a model's, and one model's decisions can
-never be served under another's name. Both properties are tested.
-
-### 5. The failures emerge from the model, so calibration is falsifiable
+### 5. Failures emerge from the model, so calibration is falsifiable
 
 We simulate all 20,000 payment attempts — successes included — and let each fail
-as a *consequence* of its issuer's NPCI-derived decline rate, any live outage,
-and the customer's liquidity. That compute is thrown away, and it buys the one
-free check available: the resulting success rate must land in the **92–96%** band
-NPCI's published figures imply.
+as a *consequence* of its issuer's decline rate, any live outage, and the
+customer's liquidity. That buys the one free check available: the success rate
+must land in the **92–96%** band NPCI's published ceilings imply.
 
 ```
-attempts 19,965 · success rate 92.28% · failures 1,543
+attempts 19,965 · success rate 92.54% · failures 1,492
 ```
 
-A hand-picked list of failures could never be *wrong* about anything. This one
-can, and `verify()` fails the run if it drifts.
+A hand-picked failure list could never be *wrong* about anything. This one can,
+and `verify()` fails the run if it drifts.
 
 ---
 
@@ -244,33 +237,30 @@ can, and `verify()` fails the run if it drifts.
 ```
 sim/           the world. agent/ may never import this — enforced by a test.
   taxonomy.py    66 real Razorpay error reasons -> 6 recovery classes
-  issuers.py     11 banks + 5 UPI apps, NPCI-informed decline rates,
-                 outage episodes with a DELAYED and LOSSY public signal
+  issuers.py     decline rates DERIVED from NPCI circular OC-149 ceilings
   customers.py   intent decay vs salary-cycle liquidity
   world.py       hidden truth, common random numbers, outcome resolution
-  generate.py    failures emerge from the model; calibration is checkable
+  generate.py    failures emerge; calibration is checkable
 
 agent/         cannot import sim/. At all.
   observe.py     THE BOUNDARY. Only merchant-visible fields.
   knowledge.py   GENERATED from Razorpay's public docs. 56 reasons,
-                 0 recovery probabilities, and no entry for 10 held-out ones.
+                 0 recovery probabilities, no entry for 10 held-out ones.
   decide.py      one structured call: diagnose + plan
   policy.py      8 ordered guardrails that can overrule the model
   audit.py       append-only decision log
-  llm.py         Claude via structured output
-  llm_ollama.py  local Ollama or Ollama Cloud, same interface
-  cache.py       deterministic decision cache -- committed, so results
-                 reproduce without credentials
+  cache.py       decision cache + replay — committed, reproducible
+  llm.py / llm_ollama.py / llm_http.py / jsonio.py
+                 Anthropic · Ollama (local+cloud) · Gemini · Groq · stub
 
 economics/     MDR, messaging, human time, goodwill, compliance exposure
-evaluation/    adapter (the only place both halves meet), baselines,
-               harness, sensitivity, report, artifacts
-web/           Express API + React dashboard
+evaluation/    adapter, baselines, harness, sensitivity, report, artifacts
+web/           Express API + React console
 ```
 
-**~8,600 lines of Python, ~2,000 of JS/JSX, 64 tests.**
+**~9,150 lines of Python, ~3,700 of web, 64 tests.**
 
-Full design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ---
 
@@ -278,152 +268,84 @@ Full design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 The comparison only means something if the opponents are real.
 
-1. **`no_retry`** — the floor. What the failures cost if left alone.
-2. **`fixed_retry`** — retry everything 3× on a backoff. Not a strawman: it is
-   what a great many merchants actually run, because it is the thing you build
-   in an afternoon.
+1. **`no_retry`** — the floor.
+2. **`fixed_retry`** — retry everything 3× on a backoff. What a great many
+   merchants actually run, because it is the thing you build in an afternoon.
 3. **`rules_engine`** — **the real opponent.** Razorpay's own published "Next
    Steps", competently implemented, with the same guardrails our agent gets.
-4. **`naive_llm`** — an LLM, the error string, and "recover the revenue". The
-   typical hackathon submission. No guardrails.
-5. **`agent`** — ours. Rulebook, economics, timing, and a policy layer that can
-   overrule it.
+4. **`naive_llm`** — an LLM, the error string, "recover the revenue". No guardrails.
+5. **`agent`** — ours.
 
-Plus `agent_no_guardrails` as an ablation, so the guardrails' price is measured
-rather than assumed.
-
-### The agent and the rules engine read the same rulebook
-
-This is deliberate, and it makes the test much harder. Both get Razorpay's
-public documentation. The model cannot win by knowing what `insufficient_funds`
-means — the lookup table knows that too. It has to win on the four things docs
-cannot give you:
-
-- **Held-out reasons.** 10 of the 66 are absent from the rulebook, simulating
-  the reality that gateway reason strings appear faster than anyone maps them.
-- **Ambiguous reasons.** `payment_failed` is documented by Razorpay as carrying
-  *no specific error code from the gateway*. The right action must be inferred
-  from context — rail, amount, customer history, and whether other payments at
-  the same bank are failing right now.
-- **Timing.** Nothing in the docs says whether to retry in ten minutes or on the
-  2nd of next month. Most of the recoverable money is in that choice.
-- **Knowing when to stop.**
-
----
-
-## The model proposes, the policy disposes
-
-The obvious build is to tell the model *"never retry a risk-declined payment"*
-and trust it. We do tell it that. We also assume it will sometimes do it anyway,
-because a system whose only safety mechanism is a paragraph of English has no
-safety mechanism.
-
-So 8 deterministic rules sit between the model and any real action:
-
-| Rule | What it stops |
-|---|---|
-| `R1_RISK_BLOCK` | Re-presenting a risk decline — the MID-review risk |
-| `R2_MERCHANT_BUG` | Retrying our own `invalid_order_id` instead of paging engineering |
-| `R2_BUG_ALREADY_REPORTED` | Filing 300 tickets for one bad deploy |
-| `R3_ATTEMPT_CAP` | Excessive retry ratios |
-| `R4_CONTACT_CAP` | A customer with 3 failed payments getting 6 messages |
-| `R5_BUDGET` | Spending past the batch ceiling |
-| `R6_UNECONOMIC` | ₹60 of WhatsApp to recover a ₹99 renewal |
-| `R7_ESCALATION_CAPACITY` | Forwarding the problem instead of solving it |
-| `R8_QUIET_HOURS` | Overnight messaging — **deferred, not cancelled** |
-
-Two of those deserve a note.
-
-**Quiet hours defer rather than veto.** The contact is legitimate; only the
-timing is wrong. Cancelling would throw away real revenue. And retries are
-explicitly *exempt* — a silent re-presentment disturbs nobody, and blocking it
-would forfeit the whole night, which is exactly when banks come back up.
-
-**We override Razorpay on risk declines.** Their docs suggest the *customer* try
-another method, which is fine for a human at a checkout. It is a different act
-for an automated system to re-present a declined transaction at volume. That
-override is deliberate and argued in `docs/CALIBRATION.md` §3 rather than buried.
+**The agent and the rules engine read the same rulebook.** That is deliberate and
+it makes the test much harder: the model cannot win by knowing what
+`insufficient_funds` means, because the lookup table knows too. It has to win on
+held-out reasons, ambiguous ones, timing, and knowing when to stop.
 
 ---
 
 ## What we got wrong
 
-Four bugs worth reporting, all found by numbers looking wrong rather than by a
-test, and all fixed at the cause rather than by tuning until we liked the answer.
+Every one of these was found by a number looking wrong, not by a test.
 
-**1. The cost model said ignoring fraud was profitable.** We priced what
-escalation *costs* without pricing what it *avoids*. Direct costs alone said
-retrying a fraud block three times costs ₹1.50 while routing it to a human costs
-₹45 — so ignoring the risk layer was thirty times cheaper. Added compliance
-exposure, tracked separately, with net reported both ways.
+**The cost model said ignoring fraud was profitable.** We priced what escalation
+*costs* without pricing what it *avoids* — so retrying a fraud block three times
+(₹1.50) beat routing it to a human (₹45) by thirty times. Added compliance
+exposure, tracked separately, net reported both ways.
 
-**2. Silent retries were recovering abandoned checkouts.** The model had a silent
-re-presentment recovering customers who walked away from a 3DS screen. There is
-no stored credential and nobody at the auth page — which is the entire reason
-nudges exist. Now gated on `is_subscription`, where a standing mandate makes
-re-presentment legitimate. This one flipped the ranking.
+**Silent retries were recovering abandoned checkouts.** There is no stored
+credential and nobody at the 3DS screen — which is the entire reason nudges
+exist. This one flipped the ranking.
 
-**3. Sampling uniformly within a recovery class** made `funds_blocked_by_mandate`
-— an exotic error — the #2 failure in the batch, and inflated held-out reasons to
-16%, quietly making the benchmark far easier for an LLM than reality would.
+**`ALL_METHODS` excluded `EMANDATE`**, so subscription debits could only fail
+with an exotic mandate error. `insufficient_funds` and `card_expired` are *the*
+classic involuntary-churn causes and couldn't reach that rail.
 
-**4. `ALL_METHODS` excluded `EMANDATE`**, so subscription debits could only fail
-with that same exotic mandate error. `insufficient_funds` and `card_expired` are
-*the* classic involuntary-churn causes and could not reach that rail at all.
+**A 429 means two different things.** Transient back-pressure clears; an
+exhausted quota never does. Treating them alike made the backoff sleep through a
+batch and report model failures for a hard limit — and a failed decision defaults
+to `stop`, so it silently handicapped the policy being measured.
 
-And one in the web layer, at the boring end of the stack but the most
-production-shaped of the four: **`EventSource` auto-reconnects, and every
-reconnect re-issued a GET that spawned a Python process.** Restarting the server
-mid-stream silently launched a fresh evaluation that overwrote the results file.
-Any SSE endpoint with a side effect has this bug. Fixed: one job at a time, a
-second caller attaches to the running job, and a client hanging up no longer
-kills the run.
+**The reproducibility claim was false.** Without credentials the client fell back
+to the stub, whose model name cannot match the cache, so it recomputed every
+decision with a heuristic and printed ₹35,919 against the published ₹39,420 with
+nothing indicating a problem. Caught by cloning to `/tmp` and reading the engine
+column.
+
+**Then we reintroduced the same bug.** `ReplayMiss` was declared fatal but
+subclassed `LLMUnavailable`, which the policy layer catches and turns into
+`stop`. Both now sit under one `FatalLLMError` base, so the policy re-raises a
+*type* rather than a list someone has to remember to extend.
+
+**The cache never flushed on completion** — every run lost its trailing
+decisions, so a clone replayed two policies perfectly then missed part-way
+through the third.
+
+And one in the web layer: **`EventSource` auto-reconnects, and every reconnect
+re-issued a GET that spawned a Python process.** Restarting the server mid-stream
+silently launched a fresh evaluation that overwrote the results file. Any SSE
+endpoint with a side effect has this bug.
 
 ---
 
 ## What this cannot prove
-
-Stated here so nobody has to catch us on it:
 
 - It does not prove the agent recovers real money from real consumers. It proves
   it makes better decisions than four alternatives **in a world calibrated from
   Razorpay's and NPCI's published documentation**.
 - `base_recovery_prob` values are assumptions. Their *ordering* is defensible;
   their exact values are not.
-- The customer behaviour model is the least grounded component in the project.
-- **Lift magnitude is not defensible, only direction.** Across the sensitivity
-  grid the lift ranges −23.8% to +781.6%, the top end being denominator collapse
-  when the rival is barely net-positive. We therefore quote no single lift
-  percentage anywhere.
+- Per-bank decline rates are **derived from NPCI's OC-149 ceilings plus a stated
+  tier assumption**, not measured. We tried to obtain the primary monthly file
+  and could not — NPCI returns 403 to automated fetches — so the per-bank
+  precision was removed rather than sourced second-hand.
+- The customer behaviour model is the least grounded component here.
+- **Held-out n=3 and ambiguous n=10 are too thin to conclude from.**
+- Only payment failures. The brief also mentions checkout abandonment (partly
+  covered via `nudge_customer`) and overdue receivables (not at all).
 
-**This is a decision-quality benchmark, not a revenue forecast.** We would rather
-present it accurately than dress it up.
+**This is a decision-quality benchmark, not a revenue forecast.**
 
-Live list of known weaknesses: [`docs/OPEN_ISSUES.md`](docs/OPEN_ISSUES.md).
-
----
-
-## Running the model-driven policies
-
-Any of three backends, selected by flag. Everything else is unchanged — the
-prompt, schema, policy layer, audit trail and harness are engine-agnostic.
-
-```bash
-# Local and free
-ollama pull qwen2.5:7b
-python scripts/run_eval.py --engine ollama --limit 150
-
-# Anthropic (Haiku ~$1.40/run for iteration, Opus for the headline)
-export ANTHROPIC_API_KEY=sk-ant-...
-python scripts/smoke_llm.py                       # verify before spending
-python scripts/run_eval.py --engine anthropic --model claude-opus-5
-```
-
-A run with no working backend falls back to `StubClient` — a deterministic
-heuristic that makes no model call. **Stub output is not a model result**, and
-that is enforced rather than trusted: every artifact carries `engine: "stub"`,
-the report refuses to print a stub run under an LLM policy label, and the
-dashboard shows a warning banner.
+Live weaknesses: [`docs/OPEN_ISSUES.md`](docs/OPEN_ISSUES.md).
 
 ---
 
@@ -431,7 +353,8 @@ dashboard shows a warning banner.
 
 | | |
 |---|---|
+| [`docs/STATE.md`](docs/STATE.md) | Cold-start handoff: run it, what's left, traps already hit |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How it fits together and why |
 | [`docs/CALIBRATION.md`](docs/CALIBRATION.md) | Which numbers are transcribed, derived, and **assumed** |
 | [`docs/OPEN_ISSUES.md`](docs/OPEN_ISSUES.md) | Known weaknesses, kept in the repo on purpose |
-| [`docs/PLAN.md`](docs/PLAN.md) | Build plan and non-goals |
+| [`docs/VIDEO.md`](docs/VIDEO.md) | Shot-by-shot script for the 5-minute submission |
