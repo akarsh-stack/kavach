@@ -54,6 +54,7 @@ pip install -r requirements.txt
 python scripts/inspect_batch.py                              # generate + verify calibration
 python scripts/run_eval.py --engine ollama --limit 150 --no-ablation
 python scripts/run_sensitivity.py --engine ollama --subject agent
+python scripts/live_probe.py --replay                        # real Razorpay payload
 python -m pytest tests/ -q                                   # 64 tests
 ```
 
@@ -216,7 +217,48 @@ decisions replayed, the published numbers exactly, 0 live calls.
 A replay *miss* is fatal, not silent. A partial replay would publish different
 numbers from the recorded ones, which is precisely what this exists to prevent.
 
-### 5. Failures emerge from the model, so calibration is falsifiable
+### 5. It has touched real Razorpay
+
+The evaluation runs on a simulator, and it has to — test mode cannot produce
+sixty-six failure reasons with realistic clustering, issuer outages on demand, or
+a month of correlated failures. Anyone who says "just use the real API" has not
+thought about where the failure distribution comes from.
+
+But that leaves a fair objection: *has any of this touched real Razorpay?*
+
+```
+$ python scripts/live_probe.py --replay
+
+REAL RAZORPAY FAILURE  (test mode)
+  payment       pay_TUORtBOxc2nlNA
+  error_reason  international_transaction_not_allowed
+  error_source  business
+  error_step    payment_initiation
+
+  in our transcribed taxonomy : YES
+  mapped by the agent rulebook: hard_stop
+
+THE AGENT, ON A REAL PAYLOAD
+  diagnosis    hard_stop  (confidence 1.00)
+  rationale    "international transactions are disallowed, a compliance
+                block, so no retry or customer contact."
+  POLICY       ALLOW -> escalate
+```
+
+A live Razorpay error payload, through the **same `Observation` dataclass the
+evaluation uses**. If the schema were wrong or the reason strings invented, this
+could not run. The agent correctly identified a compliance block and chose to
+escalate rather than burn attempts on something unrecoverable.
+
+**Deliberately outside the evaluation path** — nothing in `evaluation/` imports
+it, so the reproducible numbers cannot break because a network call failed. Test
+mode is enforced in code: `_require_test_mode()` refuses any key without an
+`rzp_test_` prefix, and the module has no capture, refund or payout path.
+
+The payload is committed (with payer PII redacted), so `--replay` reproduces it
+offline forever.
+
+### 6. Failures emerge from the model, so calibration is falsifiable
 
 We simulate all 20,000 payment attempts — successes included — and let each fail
 as a *consequence* of its issuer's decline rate, any live outage, and the
@@ -255,6 +297,7 @@ agent/         cannot import sim/. At all.
 
 economics/     MDR, messaging, human time, goodwill, compliance exposure
 evaluation/    adapter, baselines, harness, sensitivity, report, artifacts
+integrations/  razorpay_live.py -- real test-mode API. Outside the eval path.
 web/           Express API + React console
 ```
 
@@ -341,7 +384,10 @@ endpoint with a side effect has this bug.
 - The customer behaviour model is the least grounded component here.
 - **Held-out n=3 and ambiguous n=10 are too thin to conclude from.**
 - Only payment failures. The brief also mentions checkout abandonment (partly
-  covered via `nudge_customer`) and overdue receivables (not at all).
+  covered via `nudge_customer` — 12 reasons) and overdue receivables (not at
+  all).
+- The live Razorpay proof is **one payment**. It establishes that the schema and
+  the reason strings are real; it is not evidence about recovery rates.
 
 **This is a decision-quality benchmark, not a revenue forecast.**
 
@@ -353,6 +399,7 @@ Live weaknesses: [`docs/OPEN_ISSUES.md`](docs/OPEN_ISSUES.md).
 
 | | |
 |---|---|
+| [`docs/SUBMISSION.md`](docs/SUBMISSION.md) | Form answers, and what to say in the panel |
 | [`docs/STATE.md`](docs/STATE.md) | Cold-start handoff: run it, what's left, traps already hit |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How it fits together and why |
 | [`docs/CALIBRATION.md`](docs/CALIBRATION.md) | Which numbers are transcribed, derived, and **assumed** |

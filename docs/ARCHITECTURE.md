@@ -84,7 +84,7 @@ Throwing away 18,500 successful payments buys two things a sampled failure list
 cannot have:
 
 1. **A falsifiable check.** The success rate must land in the 92–96% band NPCI's
-   published figures imply. It lands at 92.28%. A hand-built list could never be
+   published figures imply. It lands at 92.54%. A hand-built list could never be
    wrong about anything.
 2. **Real correlation structure.** Failures cluster during outages, at weak
    issuers, and at month-end when customers are short. That clustering is the
@@ -246,12 +246,45 @@ that does not exist.
 
 ---
 
+## The live Razorpay integration
+
+`integrations/razorpay_live.py` talks to the real test-mode API. It exists to
+answer one question a simulator cannot: *has any of this touched real Razorpay?*
+
+```
+Razorpay test API  ->  LiveFailure  ->  to_observation()  ->  Observation
+                                                                  |
+                                              the SAME dataclass  |
+                                              the evaluation uses <-
+```
+
+That arrow is the whole point. If our `Observation` schema did not match
+Razorpay's actual payment object, or the reason strings in `sim/taxonomy.py`
+were invented, `to_observation()` could not be written and the probe could not
+run. It runs, and the live reason came back already present in our taxonomy.
+
+**It is deliberately outside the evaluation path.** Nothing under `evaluation/`
+imports it. The reproducible numbers cannot break because a network call failed,
+and a demo cannot die because an API was slow — which was the original argument
+for skipping live integration entirely. The concern is contained rather than
+dismissed.
+
+**Test mode is enforced, not assumed.** `_require_test_mode()` refuses any key
+without an `rzp_test_` prefix, and the module has no capture, refund or payout
+path — there is no code there that could move money even against a live key.
+
+Scale is the thing it cannot provide. Test mode cannot produce sixty-six failure
+reasons with realistic clustering, issuer outages on demand, or a month of
+correlated failures. That is why the simulator exists, and why this proves reach
+rather than replacing it.
+
 ## Non-goals
 
 Stated so scope creep has a wall to hit.
 
-- **No real Razorpay API calls.** Test-mode integration adds a demo-day failure
-  mode and buys nothing on the axis being judged, which is decision quality.
+- **No real Razorpay API calls in the evaluation.** Live integration exists
+  (see above) but stays outside the measured path: a network failure must not be
+  able to change a published number.
 - **No live customer messaging.** Nudges are simulated.
 - **No fine-tuning.** Prompted models only.
 - **No multi-tenancy, auth, or deployment.**

@@ -140,7 +140,31 @@ POLICY    VETO  [R1_RISK_BLOCK]  ->  escalate
 
 ---
 
-## Beat 5 · 2:25–2:55 · The test that can fail
+## Beat 4b · 2:25–2:45 · It has touched real Razorpay
+
+**Show:** terminal.
+
+```bash
+python scripts/live_probe.py --replay
+```
+
+**Say:**
+
+> And it is not a closed loop. This is a real failed payment from Razorpay test
+> mode — a real error payload, going through the same code the evaluation uses.
+>
+> `international_transaction_not_allowed`. Already in my taxonomy, because I
+> copied that taxonomy from their docs. The agent called it a compliance block
+> and escalated instead of retrying.
+>
+> Test mode can't give me sixty-six failure reasons with realistic clustering —
+> that's what the simulator is for. But it can prove the schema is real.
+
+**Keep this to 20 seconds.** It is a rebuttal, not a feature.
+
+---
+
+## Beat 5 · 2:45–3:10 · The test that can fail
 
 **Show:** terminal.
 
@@ -172,7 +196,7 @@ Restored:                                   64 passed
 
 ---
 
-## Beat 6 · 2:55–3:40 · The money
+## Beat 6 · 3:10–3:50 · The money
 
 **Show:** Evidence tab → *Net recovery by policy*, then *Where the money went*.
 
@@ -205,7 +229,7 @@ Restored:                                   64 passed
 
 ---
 
-## Beat 7 · 3:40–4:20 · Where the result breaks
+## Beat 7 · 3:50–4:25 · Where the result breaks
 
 **Show:** Evidence tab → sensitivity grid. Point at the exposure block.
 
@@ -234,7 +258,7 @@ Restored:                                   64 passed
 
 ---
 
-## Beat 8 · 4:20–5:00 · What broke
+## Beat 8 · 4:25–5:00 · What broke
 
 **Show:** README → *What we got wrong*.
 
@@ -277,6 +301,7 @@ Restored:                                   64 passed
 - [ ] The guardrails-gained-₹12 admission included
 - [ ] The n=3 / n=10 limitation stated
 - [ ] **No lift percentage quoted**
+- [ ] The live Razorpay payload shown (beat 4b)
 - [ ] Under 5:00
 
 ## If you have to cut
