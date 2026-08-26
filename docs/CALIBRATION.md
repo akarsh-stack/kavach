@@ -207,48 +207,52 @@ comparison across a 36-point grid of Tier 3 assumptions — recovery probabiliti
 scaled ±30%, annoyance cost across two orders of magnitude, and compliance
 exposure including zero. We report the range of the lift, not a single number.
 
-### 5.4.1 Result for the agent: wins 34 of 36, loses only where messaging stops paying
+### 5.4.1 Result for the agent: wins 33 of 36, loses only where messaging stops paying
 
-`gpt-oss:120b` via Ollama Cloud, 150 failed payments, decisions served from the
-committed cache so this reproduces without credentials.
+`gpt-oss:120b` via Ollama Cloud, 150 failed payments, decisions replayed from
+the committed cache so this reproduces without credentials.
 
 ```
                           no_retry   fixed_retry   rules_engine     agent
-recovery prob  x0.7              0        16,567         30,700    33,008
-               x1.0              0        32,007         35,970    39,420
-               x1.3              0        36,136         47,399    50,438
+recovery prob  x0.7              0        18,603         31,560    33,829
+               x1.0              0        33,605         37,437    40,849
+               x1.3              0        36,688         44,861    47,831
 
-annoyance cost x0.0              0        32,007         37,050    40,500
-               x0.1              0        32,007         36,942    40,392
-               x1.0              0        32,007         35,970    39,420
-               x10.0             0        32,007         26,250    29,700
+annoyance cost x0.0              0        33,605         38,541    41,989
+               x0.1              0        33,605         38,431    41,875
+               x1.0              0        33,605         37,437    40,849
+               x10.0             0        33,605         27,501    30,589
 
-compliance     x0.0              0        36,057         35,970    39,420
-exposure       x1.0              0        32,007         35,970    39,420
-               x5.0              0        15,807         35,970    39,420
+compliance     x0.0              0        37,655         37,437    40,849
+exposure       x1.0              0        33,605         37,437    40,849
+               x5.0              0        17,405         37,437    40,849
 ```
 
-**The agent wins 34 of 36 points.** The two losses are not scattered:
+**The agent wins 33 of 36 points.** The three losses are not scattered:
 
 ```
 everywhere except annoyance x10 : 27 / 27
-at annoyance x10                :  7 /  9
+at annoyance x10                :  6 /  9
 ```
 
-Both losses are at `annoyance x10` — where the cost of over-contacting a
-customer is ten times our estimate. At that price messaging stops paying, and
-`fixed_retry`, which never contacts anyone at all, pulls ahead of every policy
-that does. That is a coherent economic result rather than noise, and it names
-the condition under which our approach would be the wrong one.
+All three sit at `annoyance x10` — where over-contacting a customer costs ten
+times our estimate. At that price messaging stops paying, and `fixed_retry`,
+which never contacts anyone, pulls ahead of every policy that does. A coherent
+economic result rather than noise, and it names the condition under which our
+approach would be the wrong one.
 
-Note what is *not* sensitive: the agent's ranking is completely unmoved by the
-compliance-exposure axis, because it commits **zero violations**. Exposure is a
-cost it never incurs. The same axis is what decides `fixed_retry`, which swings
-from 36,057 down to 15,807 across it.
+Note what is *not* sensitive. The agent's net is **identical at every point on
+the compliance-exposure axis** — 40,849 at x0, x1 and x5 — because it commits
+zero violations, so exposure is a cost it never incurs. The same axis swings
+`fixed_retry` from 37,655 down to 17,405.
+
+That is the strongest argument for the guardrails in the project, and it is not
+the one we expected. They did not improve the average; they made an entire axis
+of regulatory risk **inapplicable**.
 
 **Magnitude remains undefensible.** Across the grid the lift over the best rival
-ranges **-17.6% to +13.1%**, so the direction is reportable and the size is not.
-We quote no single lift percentage anywhere in this project.
+ranges **-18.8% to +11.2%**, so the direction is reportable and the size is not.
+We quote no single lift percentage anywhere.
 
 ### 5.4.2 Earlier result, non-LLM policies only: the sign flips on exposure
 

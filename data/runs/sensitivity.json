@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-24T16:09:43.712176+00:00",
+  "generated_at": "2026-08-26T11:08:41.283902+00:00",
   "subject": "agent",
   "points": [
     {
@@ -8,9 +8,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 2061700,
-        "rules_engine": 3178011,
-        "agent": 3411150
+        "fixed_retry": 2265349,
+        "rules_engine": 3266422,
+        "agent": 3499326
       },
       "winner": "agent"
     },
@@ -20,9 +20,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1656700,
-        "rules_engine": 3178011,
-        "agent": 3411150
+        "fixed_retry": 1860349,
+        "rules_engine": 3266422,
+        "agent": 3499326
       },
       "winner": "agent"
     },
@@ -32,9 +32,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 36700,
-        "rules_engine": 3178011,
-        "agent": 3411150
+        "fixed_retry": 240349,
+        "rules_engine": 3266422,
+        "agent": 3499326
       },
       "winner": "agent"
     },
@@ -44,9 +44,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 2061700,
-        "rules_engine": 3167211,
-        "agent": 3400110
+        "fixed_retry": 2265349,
+        "rules_engine": 3255382,
+        "agent": 3487686
       },
       "winner": "agent"
     },
@@ -56,9 +56,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1656700,
-        "rules_engine": 3167211,
-        "agent": 3400110
+        "fixed_retry": 1860349,
+        "rules_engine": 3255382,
+        "agent": 3487686
       },
       "winner": "agent"
     },
@@ -68,9 +68,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 36700,
-        "rules_engine": 3167211,
-        "agent": 3400110
+        "fixed_retry": 240349,
+        "rules_engine": 3255382,
+        "agent": 3487686
       },
       "winner": "agent"
     },
@@ -80,9 +80,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 2061700,
-        "rules_engine": 3070011,
-        "agent": 3300750
+        "fixed_retry": 2265349,
+        "rules_engine": 3156022,
+        "agent": 3382926
       },
       "winner": "agent"
     },
@@ -92,9 +92,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1656700,
-        "rules_engine": 3070011,
-        "agent": 3300750
+        "fixed_retry": 1860349,
+        "rules_engine": 3156022,
+        "agent": 3382926
       },
       "winner": "agent"
     },
@@ -104,9 +104,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 36700,
-        "rules_engine": 3070011,
-        "agent": 3300750
+        "fixed_retry": 240349,
+        "rules_engine": 3156022,
+        "agent": 3382926
       },
       "winner": "agent"
     },
@@ -116,9 +116,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 2061700,
-        "rules_engine": 2098011,
-        "agent": 2307150
+        "fixed_retry": 2265349,
+        "rules_engine": 2162422,
+        "agent": 2335326
       },
       "winner": "agent"
     },
@@ -128,9 +128,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1656700,
-        "rules_engine": 2098011,
-        "agent": 2307150
+        "fixed_retry": 1860349,
+        "rules_engine": 2162422,
+        "agent": 2335326
       },
       "winner": "agent"
     },
@@ -140,9 +140,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 36700,
-        "rules_engine": 2098011,
-        "agent": 2307150
+        "fixed_retry": 240349,
+        "rules_engine": 2162422,
+        "agent": 2335326
       },
       "winner": "agent"
     },
@@ -152,9 +152,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3605657,
-        "rules_engine": 3705019,
-        "agent": 4049969
+        "fixed_retry": 3765526,
+        "rules_engine": 3854134,
+        "agent": 4198914
       },
       "winner": "agent"
     },
@@ -164,9 +164,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3200657,
-        "rules_engine": 3705019,
-        "agent": 4049969
+        "fixed_retry": 3360526,
+        "rules_engine": 3854134,
+        "agent": 4198914
       },
       "winner": "agent"
     },
@@ -176,9 +176,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1580657,
-        "rules_engine": 3705019,
-        "agent": 4049969
+        "fixed_retry": 1740526,
+        "rules_engine": 3854134,
+        "agent": 4198914
       },
       "winner": "agent"
     },
@@ -188,9 +188,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3605657,
-        "rules_engine": 3694219,
-        "agent": 4039169
+        "fixed_retry": 3765526,
+        "rules_engine": 3843094,
+        "agent": 4187514
       },
       "winner": "agent"
     },
@@ -200,9 +200,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3200657,
-        "rules_engine": 3694219,
-        "agent": 4039169
+        "fixed_retry": 3360526,
+        "rules_engine": 3843094,
+        "agent": 4187514
       },
       "winner": "agent"
     },
@@ -212,9 +212,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1580657,
-        "rules_engine": 3694219,
-        "agent": 4039169
+        "fixed_retry": 1740526,
+        "rules_engine": 3843094,
+        "agent": 4187514
       },
       "winner": "agent"
     },
@@ -224,9 +224,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3605657,
-        "rules_engine": 3597019,
-        "agent": 3941969
+        "fixed_retry": 3765526,
+        "rules_engine": 3743734,
+        "agent": 4084914
       },
       "winner": "agent"
     },
@@ -236,9 +236,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3200657,
-        "rules_engine": 3597019,
-        "agent": 3941969
+        "fixed_retry": 3360526,
+        "rules_engine": 3743734,
+        "agent": 4084914
       },
       "winner": "agent"
     },
@@ -248,9 +248,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1580657,
-        "rules_engine": 3597019,
-        "agent": 3941969
+        "fixed_retry": 1740526,
+        "rules_engine": 3743734,
+        "agent": 4084914
       },
       "winner": "agent"
     },
@@ -260,9 +260,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3605657,
-        "rules_engine": 2625019,
-        "agent": 2969969
+        "fixed_retry": 3765526,
+        "rules_engine": 2750134,
+        "agent": 3058914
       },
       "winner": "fixed_retry"
     },
@@ -272,9 +272,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3200657,
-        "rules_engine": 2625019,
-        "agent": 2969969
+        "fixed_retry": 3360526,
+        "rules_engine": 2750134,
+        "agent": 3058914
       },
       "winner": "fixed_retry"
     },
@@ -284,9 +284,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1580657,
-        "rules_engine": 2625019,
-        "agent": 2969969
+        "fixed_retry": 1740526,
+        "rules_engine": 2750134,
+        "agent": 3058914
       },
       "winner": "agent"
     },
@@ -296,9 +296,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 4018589,
-        "rules_engine": 4846711,
-        "agent": 5150599
+        "fixed_retry": 4073792,
+        "rules_engine": 4595305,
+        "agent": 4894699
       },
       "winner": "agent"
     },
@@ -308,9 +308,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3613589,
-        "rules_engine": 4846711,
-        "agent": 5150599
+        "fixed_retry": 3668792,
+        "rules_engine": 4595305,
+        "agent": 4894699
       },
       "winner": "agent"
     },
@@ -320,9 +320,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1993589,
-        "rules_engine": 4846711,
-        "agent": 5150599
+        "fixed_retry": 2048792,
+        "rules_engine": 4595305,
+        "agent": 4894699
       },
       "winner": "agent"
     },
@@ -332,9 +332,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 4018589,
-        "rules_engine": 4836031,
-        "agent": 5139919
+        "fixed_retry": 4073792,
+        "rules_engine": 4584385,
+        "agent": 4883539
       },
       "winner": "agent"
     },
@@ -344,9 +344,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3613589,
-        "rules_engine": 4836031,
-        "agent": 5139919
+        "fixed_retry": 3668792,
+        "rules_engine": 4584385,
+        "agent": 4883539
       },
       "winner": "agent"
     },
@@ -356,9 +356,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1993589,
-        "rules_engine": 4836031,
-        "agent": 5139919
+        "fixed_retry": 2048792,
+        "rules_engine": 4584385,
+        "agent": 4883539
       },
       "winner": "agent"
     },
@@ -368,9 +368,9 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 4018589,
-        "rules_engine": 4739911,
-        "agent": 5043799
+        "fixed_retry": 4073792,
+        "rules_engine": 4486105,
+        "agent": 4783099
       },
       "winner": "agent"
     },
@@ -380,9 +380,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3613589,
-        "rules_engine": 4739911,
-        "agent": 5043799
+        "fixed_retry": 3668792,
+        "rules_engine": 4486105,
+        "agent": 4783099
       },
       "winner": "agent"
     },
@@ -392,9 +392,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1993589,
-        "rules_engine": 4739911,
-        "agent": 5043799
+        "fixed_retry": 2048792,
+        "rules_engine": 4486105,
+        "agent": 4783099
       },
       "winner": "agent"
     },
@@ -404,11 +404,11 @@
       "exposure_mult": 0.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 4018589,
-        "rules_engine": 3778711,
-        "agent": 4082599
+        "fixed_retry": 4073792,
+        "rules_engine": 3503305,
+        "agent": 3778699
       },
-      "winner": "agent"
+      "winner": "fixed_retry"
     },
     {
       "prob_scale": 1.3,
@@ -416,9 +416,9 @@
       "exposure_mult": 1.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 3613589,
-        "rules_engine": 3778711,
-        "agent": 4082599
+        "fixed_retry": 3668792,
+        "rules_engine": 3503305,
+        "agent": 3778699
       },
       "winner": "agent"
     },
@@ -428,9 +428,9 @@
       "exposure_mult": 5.0,
       "nets": {
         "no_retry": 0,
-        "fixed_retry": 1993589,
-        "rules_engine": 3778711,
-        "agent": 4082599
+        "fixed_retry": 2048792,
+        "rules_engine": 3503305,
+        "agent": 3778699
       },
       "winner": "agent"
     }

@@ -112,22 +112,27 @@ thing this project needs.
 Mostly. `python scripts/run_sensitivity.py --engine ollama --subject agent`
 sweeps 36 combinations of the three softest numbers in the model.
 
-**The agent wins 34 of 36.** The two losses are both at `annoyance ×10`, where
+**The agent wins 33 of 36.** All three losses are at `annoyance ×10`, where
 over-contacting costs ten times our estimate — at that price messaging stops
 paying and `fixed_retry`, which never contacts anyone, pulls ahead of every
 policy that does.
 
 ```
 everywhere except annoyance x10 : 27 / 27
-at annoyance x10                :  7 /  9
+at annoyance x10                :  6 /  9
 ```
 
-Notably the agent is *completely insensitive* to the compliance-exposure axis,
-because it commits zero violations — exposure is a cost it never incurs. That
-same axis swings `fixed_retry` from ₹36,057 down to ₹15,807.
+The agent's net is **identical at every point on the compliance-exposure axis**
+— ₹40,849 at ×0, ×1 and ×5 — because it commits zero violations, so exposure is
+a cost it never incurs. The same axis swings `fixed_retry` from ₹37,655 down to
+₹17,405.
+
+That is the strongest argument for the guardrails here, and not the one we
+expected: they did not improve the average, they made an entire axis of
+regulatory risk **inapplicable**.
 
 **Magnitude is not defensible, only direction.** Across the grid the lift ranges
-−17.6% to +13.1%, so we quote no single lift percentage anywhere.
+−18.8% to +11.2%, so we quote no single lift percentage anywhere.
 
 Full grid: [`docs/CALIBRATION.md` §5.4.1](docs/CALIBRATION.md).
 

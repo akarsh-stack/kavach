@@ -363,6 +363,17 @@
 "recovery_class": "merchant_fix"
 }
 },
+"04cf6ddb699f2a644b64ec83ce6a6a68": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.6,
+"delay_hours": 0.0,
+"rationale": "payment_failed likely a transient bank issue, but three recovery attempts already used; further action would breach the 3\u2011attempt limit.",
+"recovery_class": "retry_same"
+}
+},
 "04f5c0193449204f6e14c9e7faa51864": {
 "model": "gpt-oss:120b",
 "value": {
@@ -1243,6 +1254,17 @@
 "recovery_class": "retry_same"
 }
 },
+"112c9a404cb2668f2b1c120394bed805": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.96,
+"delay_hours": 2.0,
+"rationale": "Reason maps to retry_later_funds; the customer's daily UPI frequency limit is hit, so a short wait before a silent retry maximizes recovery chance.",
+"recovery_class": "retry_later_funds"
+}
+},
 "11983155039dea7f9ff088a79b636593": {
 "model": "gpt-oss:120b",
 "value": {
@@ -2022,6 +2044,17 @@
 "delay_hours": 2.0,
 "rationale": "Insufficient funds is a temporary balance issue; a delayed silent retry follows the retry_later_funds class and suits the small subscription amount.",
 "recovery_class": "retry_later_funds"
+}
+},
+"1b271ac88668e7976eded0d72c48d5ea": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "vpa_resolution_failed maps to switch_rail, but the payment already hit the 2\u2011message limit, so we cannot prompt the customer; further attempts would waste resources.",
+"recovery_class": "switch_rail"
 }
 },
 "1b3d3349d92c2403f1bd7d66e32eb71a": {
@@ -3124,6 +3157,17 @@
 "recovery_class": "retry_later_funds"
 }
 },
+"2af4b142ebefc04db80c0700a6ec14b0": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "whatsapp",
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "invalid_vpa maps to switch_rail; the VPA is incorrect, so retrying same UPI will fail. Prompt the customer to use a different payment method immediately.",
+"recovery_class": "switch_rail"
+}
+},
 "2afa06f0734e3c297b66e033eb9a1199": {
 "model": "gpt-oss:120b",
 "value": {
@@ -4145,6 +4189,17 @@
 "delay_hours": 24.0,
 "rationale": "Risk check failure often clears after a short period. No customer contact needed yet; schedule a retry in 24h to allow risk engine to reassess.",
 "recovery_class": "retry_later_funds"
+}
+},
+"3986b08650729361a186fa0e851bdb92": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.97,
+"delay_hours": 0.0,
+"rationale": "Card is expired; only a different payment method can succeed, but the per\u2011payment message limit (2) is already reached, so no further customer contact is allowed.",
+"recovery_class": "switch_rail"
 }
 },
 "39a27048e9f8642e37823708777aa09a": {
@@ -5170,6 +5225,17 @@
 "recovery_class": "retry_same"
 }
 },
+"4ae7e4c839fe78613c87a2e4c81143ac": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "payment_cancelled maps to nudge_customer; customer cancelled, so a fresh payment link prompt is appropriate and within messaging limits.",
+"recovery_class": "nudge_customer"
+}
+},
 "4af19f53985521c58b49b40aca7ff695": {
 "model": "gpt-oss:120b",
 "value": {
@@ -5247,6 +5313,17 @@
 "recovery_class": "retry_same"
 }
 },
+"4d7cf99bdf61cbd65617c419bcf6dd1c": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.85,
+"delay_hours": 0.5,
+"rationale": "Generic payment_failed likely a transient bank/gateway issue; no outage signals and customer has prior success, so a silent retry after a short wait is appropriate.",
+"recovery_class": "retry_same"
+}
+},
 "4d8391544d45b893cfe69ccbe9e93b34": {
 "model": "gpt-oss:120b",
 "value": {
@@ -5256,6 +5333,17 @@
 "delay_hours": 24.0,
 "rationale": "The failure indicates the customer's mandate funds are blocked, likely due to insufficient balance; a silent retry after a day gives time for funds to become available.",
 "recovery_class": "retry_later_funds"
+}
+},
+"4da68784a54f1b01446d8918ed9762dd": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "invalid_vpa maps to switch_rail, but messaging limits (2 messages already sent) prevent prompting the customer, so we must give up.",
+"recovery_class": "switch_rail"
 }
 },
 "4dc743ad5c6946d5233471a0eae9a0e3": {
@@ -5751,6 +5839,17 @@
 "delay_hours": 6.5,
 "rationale": "payment_timed_out maps to nudge_customer; need to message the customer with a fresh link, but messaging is prohibited before 09:00 IST, so delay until then.",
 "recovery_class": "nudge_customer"
+}
+},
+"5457945eccb6e15508637d8c6432ecb5": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "whatsapp",
+"confidence": 0.98,
+"delay_hours": 0.0,
+"rationale": "vpa_resolution_failed maps to switch_rail; the VPA cannot be resolved, so the UPI instrument is dead and the customer must use another payment method.",
+"recovery_class": "switch_rail"
 }
 },
 "54667e0163ddd100431401065ec87a94": {
@@ -8899,6 +8998,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"7e54e7ded2f437f74d5074b5961a4cb5": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Authentication (3D/OTP) failed, indicating user error; prompt with a fresh payment link to let the customer complete the mandate.",
+"recovery_class": "nudge_customer"
+}
+},
 "7e5dc2aa8643db8c8d9e62c13f55405f": {
 "model": "gpt-oss:120b",
 "value": {
@@ -10131,6 +10241,17 @@
 "recovery_class": "retry_same"
 }
 },
+"90a177c86a81dc9ab89add643e9cc018": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.78,
+"delay_hours": 0.5,
+"rationale": "payment_failed maps to retry_same; likely a transient bank/gateway issue, and this is the third allowed silent retry after a short wait.",
+"recovery_class": "retry_same"
+}
+},
 "90b1087524434d05ed24fa83858bd06e": {
 "model": "gpt-oss:120b",
 "value": {
@@ -10514,6 +10635,17 @@
 "delay_hours": 0.0,
 "rationale": "payment_failed maps to retry_same; no outage signals and first attempt, so a silent immediate retry is appropriate.",
 "recovery_class": "retry_same"
+}
+},
+"96d864cf75f67cacc741058763fece21": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Authentication_failed maps to nudge_customer, but the payment already hit the 2\u2011message limit for this customer and payment, so we cannot send another prompt; a silent retry would likely repeat the same auth failure, so we stop.",
+"recovery_class": "nudge_customer"
 }
 },
 "96d9dfec5a3fdfb88803f8cf44485a47": {
@@ -12782,6 +12914,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"b1c7607c1ea6bdfa9d85401219245030": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.9,
+"delay_hours": 0.0,
+"rationale": "payment_timed_out requires a customer prompt, but both the 2\u2011message and 3\u2011attempt limits are reached; further silent retries are unlikely to succeed, so we stop.",
+"recovery_class": "nudge_customer"
+}
+},
 "b1ccdd858487d4284ed14fbb5a5070d5": {
 "model": "gpt-oss:120b",
 "value": {
@@ -13211,6 +13354,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"b8908492cf150deb4c3a84f960a9a3ef": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "Transaction frequency limit exceeded; daily limit likely reset after 24h, and we have one retry left, so a silent immediate retry is appropriate.",
+"recovery_class": "retry_later_funds"
+}
+},
 "b893399aefa9e93bc3d00db81ad378a7": {
 "model": "gpt-oss:120b",
 "value": {
@@ -13462,6 +13616,17 @@
 "delay_hours": 0.0,
 "rationale": "Customer explicitly cancelled the UPI payment; mapping directs to nudge, but per\u2011payment message limit (2) already reached, so no further outreach is allowed.",
 "recovery_class": "nudge_customer"
+}
+},
+"bbed9b0db9d785898068887c2542665a": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "Reason maps to retry_later_funds but 3 recovery attempts already used; cannot retry further per limits, so stop.",
+"recovery_class": "retry_later_funds"
 }
 },
 "bbefde3d620685966ecc2807d3f3b03d": {
@@ -14100,6 +14265,17 @@
 "delay_hours": 0.0,
 "rationale": "Authentication failure likely due to user entering wrong OTP or cancelling. Prior attempts exhausted; prompt customer to re\u2011authorize the mandate with correct OTP to recover the recurring Rs\u202f999 payment.",
 "recovery_class": "nudge_customer"
+}
+},
+"c5110a83fb4b5afd034cb437a1604a6a": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.8,
+"delay_hours": 0.0,
+"rationale": "Funds blocked by mandate suggests a later\u2011funds issue, but three recovery attempts have already been used, hitting the max per payment, so no further action is allowed.",
+"recovery_class": "retry_later_funds"
 }
 },
 "c5168427b432d53c38b19819144bb7a8": {
@@ -15675,6 +15851,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"dc11090d5f22075d55d8ef6a66c84c46": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.73,
+"delay_hours": 0.5,
+"rationale": "payment_failed is generic; with no outage signals and only two attempts used, a short delayed retry of the same e-mandate is likely to succeed as a transient issue.",
+"recovery_class": "retry_same"
+}
+},
 "dc832536298c61c0758a06a71c4b8fa4": {
 "model": "gpt-oss:120b",
 "value": {
@@ -16654,6 +16841,17 @@
 "recovery_class": "retry_later_funds"
 }
 },
+"ec06695b6e62a80fc3c805eecd2a31da": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.65,
+"delay_hours": 0.0,
+"rationale": "payment_failed likely a transient bank/gateway issue (retry_same), but three attempts already used; further retries or messages would exceed limits, so we stop.",
+"recovery_class": "retry_same"
+}
+},
 "ec16c16c806d3bc50d50b1da1db70c16": {
 "model": "gpt-oss:120b",
 "value": {
@@ -17587,6 +17785,17 @@
 "delay_hours": 0.0,
 "rationale": "Customer explicitly cancelled the UPI payment and has already received 7 messages. Further retries or nudges risk annoyance and low conversion likelihood.",
 "recovery_class": "hard_stop"
+}
+},
+"f94046537bf77d7ce0c9ecc3bbd7c3d0": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Customer cancelled the payment; mapping suggests nudging, but message limit reached and further attempts would waste resources, so stop.",
+"recovery_class": "nudge_customer"
 }
 },
 "f9436f172f48cbe4aad5f1d9e81280d9": {
