@@ -182,3 +182,79 @@ def test_key_is_stable_across_processes():
     assert k1 == k2
     assert k1 != _key("m", "Answer", "sys", "user2")
     assert len(k1) == 32
+
+
+# ---------------------------------------------------------------------------
+# Replay: the mechanism the reproducibility claim actually rests on
+# ---------------------------------------------------------------------------
+
+
+def test_replay_serves_recorded_decisions_without_a_backend(cache_path):
+    from agent.cache import ReplayClient
+
+    inner = CountingClient(label="recorded")
+    inner.model = "real-model-v1"
+    rec = CachedClient(inner, path=cache_path)
+    rec.complete("SYS", "USER", Answer)
+    rec.save()
+
+    replay = ReplayClient(path=cache_path)
+    got = replay.complete("SYS", "USER", Answer)
+
+    assert replay.model == "real-model-v1"
+    assert got.label == "recorded"
+    assert replay.stats()["live_calls"] == 0
+
+
+def test_replay_miss_is_fatal(cache_path):
+    """A partial replay silently publishes different numbers from the recorded
+    ones -- the exact failure this mechanism exists to prevent."""
+    from agent.cache import ReplayClient, ReplayMiss
+
+    inner = CountingClient()
+    inner.model = "real-model-v1"
+    rec = CachedClient(inner, path=cache_path)
+    rec.complete("SYS", "USER", Answer)
+    rec.save()
+
+    replay = ReplayClient(path=cache_path)
+    with pytest.raises(ReplayMiss):
+        replay.complete("SYS", "A DIFFERENT PROMPT", Answer)
+
+
+def test_replay_ignores_stub_entries(cache_path):
+    """Replaying a stub would reproduce a heuristic and call it a model result."""
+    from agent.cache import ReplayClient
+    from agent.llm import LLMUnavailable
+
+    stub = CountingClient()
+    stub.model = "stub-heuristic-v1"
+    c = CachedClient(stub, path=cache_path)
+    c.complete("SYS", "USER", Answer)
+    c.save()
+
+    with pytest.raises(LLMUnavailable):
+        ReplayClient(path=cache_path)
+
+
+def test_build_client_prefers_replay_over_stub(cache_path, monkeypatch):
+    """The bug this guards: with no credentials, build_client fell through to
+    the stub, whose model name cannot match the recorded entries -- so it
+    silently recomputed every decision with a heuristic and reported the result
+    as if it were the published run."""
+    import agent.cache as cache_mod
+    from agent.llm import build_client
+
+    inner = CountingClient(label="recorded")
+    inner.model = "real-model-v1"
+    rec = CachedClient(inner, path=cache_path)
+    rec.complete("SYS", "USER", Answer)
+    rec.save()
+
+    monkeypatch.setattr(cache_mod, "DEFAULT_PATH", cache_path)
+    monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    client = build_client(engine="anthropic")
+    assert client.engine == "replay", "must replay, never silently stub"
+    assert client.model == "real-model-v1"

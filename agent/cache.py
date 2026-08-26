@@ -47,7 +47,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from agent.llm import LLMClient, Usage
+from agent.llm import LLMClient, LLMUnavailable, Usage
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -184,4 +184,74 @@ class CachedClient(LLMClient):
             "misses": self.misses,
             "hit_rate": round(self.hits / total, 3) if total else 0.0,
             "live_calls": self.inner.usage.calls,
+        }
+
+
+class ReplayMiss(LLMUnavailable):
+    """A replay run asked for a decision the cache does not hold.
+
+    Fatal by design. A partial replay silently produces different numbers from
+    the ones published, which is the precise failure this whole mechanism
+    exists to prevent. A miss means the prompt, the taxonomy inside it, or the
+    batch has changed since the cache was recorded -- in which case the honest
+    move is to re-record, not to paper over the gap.
+    """
+
+
+class ReplayClient(LLMClient):
+    """Serves recorded decisions and nothing else. No network, no invention.
+
+    This is what makes the reproducibility claim true rather than aspirational.
+    Without it, a clone with no credentials falls back to `StubClient`, whose
+    model name differs -- so it cannot hit the recorded entries at all, quietly
+    recomputes every decision with a heuristic, and reports numbers that are not
+    the published ones.
+
+    We shipped exactly that bug and only caught it by cloning the repo and
+    reading the engine column.
+    """
+
+    engine = "replay"
+
+    def __init__(self, path: pathlib.Path | str | None = None, model: str | None = None):
+        super().__init__()
+        # Resolved at call time, not bound as a default argument: a default
+        # binds at def time, which made the path unpatchable in tests and the
+        # class impossible to point at a second cache.
+        self.path = pathlib.Path(path if path is not None else DEFAULT_PATH)
+        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        self._store = raw.get("entries", {})
+
+        models = {}
+        for v in self._store.values():
+            models[v["model"]] = models.get(v["model"], 0) + 1
+        real = {m: n for m, n in models.items() if not m.startswith("stub")}
+        if model is None:
+            if not real:
+                raise LLMUnavailable("cache holds no real model decisions to replay")
+            model = max(real, key=lambda m: real[m])
+        self.model = model
+        self.usage.model = model
+        self.available = models.get(model, 0)
+        self.hits = 0
+
+    def complete(self, system: str, user: str, schema_cls: type[T]) -> T:
+        k = _key(self.model, schema_cls.__name__, system, user)
+        hit = self._store.get(k)
+        if hit is None:
+            raise ReplayMiss(
+                f"no recorded decision for this input under '{self.model}'. The prompt "
+                f"or batch has changed since the cache was recorded; re-record with a "
+                f"live backend rather than replaying a stale cache."
+            )
+        self.hits += 1
+        return schema_cls.model_validate(hit["value"])
+
+    def stats(self) -> dict[str, object]:
+        return {
+            "entries": self.available,
+            "hits": self.hits,
+            "misses": 0,
+            "hit_rate": 1.0,
+            "live_calls": 0,
         }

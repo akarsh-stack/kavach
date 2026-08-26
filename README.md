@@ -190,8 +190,21 @@ to disk, keyed on `(model, schema, system prompt, user message)`. Any change to
 the prompt or the observation is a different key and a real call; there is no
 way to silently serve a stale decision.
 
-**That cache is committed.** A reviewer with no API key and no GPU can clone this
-repo, run the evaluation, and get our exact numbers *including the LLM policies*.
+**That cache is committed**, and when no backend is reachable the client
+*replays* it rather than falling back to the stub. So a reviewer with no API key
+and no GPU can clone this repo, run the evaluation, and get our exact numbers
+including the LLM policies:
+
+```
+[llm] Ollama unavailable: model 'qwen2.5:7b' unavailable
+      replaying 1500 recorded decisions from gpt-oss:120b
+running agent      net Rs 39,420   (0 live calls, disk cache 100%)
+running naive_llm  net Rs -39,640  (0 live calls, disk cache 100%)
+```
+
+A replay *miss* is fatal rather than silent: a partial replay would publish
+different numbers from the recorded ones, which is precisely what this mechanism
+exists to prevent.
 
 It also makes the sweep affordable. Measured on a 27-point grid over the agent:
 

@@ -388,6 +388,26 @@ def build_client(
     single worst failure mode for this project would be a stub result quietly
     presented as a model result.
     """
+    def replay_or_stub(why: str) -> LLMClient:
+        """No live backend. Replay recorded decisions if we have them.
+
+        Falling straight through to the stub was a real bug: the stub's model
+        name differs, so it cannot hit the recorded entries, and it silently
+        recomputed every decision with a heuristic while the report happily
+        printed the result. A clone with no credentials must reproduce the
+        published numbers or say plainly that it cannot.
+        """
+        from agent.cache import ReplayClient
+
+        try:
+            rc = ReplayClient()
+            print(f"  [llm] {why}")
+            print(f"        replaying {rc.available} recorded decisions from {rc.model}")
+            return rc
+        except (LLMUnavailable, OSError, ValueError):
+            print(f"  [llm] {why} -> StubClient (no cache to replay)")
+            return StubClient()
+
     def wrap(client: LLMClient) -> LLMClient:
         if not cache:
             return client
@@ -408,9 +428,7 @@ def build_client(
         try:
             return wrap(cls(**kw))  # type: ignore[arg-type]
         except LLMUnavailable as exc:
-            print(f"  [llm] {engine} unavailable -> StubClient")
-            print(f"        {exc}")
-            return StubClient()
+            return replay_or_stub(f"{engine} unavailable: {exc}")
 
     if engine == "ollama":
         from agent.llm_ollama import OllamaClient
@@ -418,15 +436,12 @@ def build_client(
         try:
             return wrap(OllamaClient(**kw))  # type: ignore[arg-type]
         except LLMUnavailable as exc:
-            print("  [llm] Ollama unavailable -> StubClient")
-            print(f"        {exc}")
-            return StubClient()
+            return replay_or_stub(f"Ollama unavailable: {exc}")
 
     try:
         return wrap(AnthropicClient(**kw))  # type: ignore[arg-type]
     except LLMUnavailable as exc:
-        print(f"  [llm] falling back to StubClient: {exc}")
-        return StubClient()
+        return replay_or_stub(f"Anthropic unavailable: {exc}")
 
 
 def estimate_cost_usd(
