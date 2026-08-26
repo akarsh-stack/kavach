@@ -26,15 +26,15 @@ The interesting part is not the agent. It is the measurement around it.
 
 ## 60-second quickstart
 
-Everything below runs with **no API key and no model**. Three of the five
-policies need neither.
+Everything below runs with **no API key and no model**. The three non-LLM
+policies need neither, and the model-driven ones replay from the committed cache.
 
 ```bash
 pip install pydantic pytest
 python scripts/inspect_batch.py        # generate a batch, verify its calibration
 python scripts/run_eval.py --no-llm    # compare the credential-free policies
 python scripts/run_sensitivity.py      # does the conclusion survive our assumptions?
-python -m pytest tests/ -q             # 32 tests, including the boundary proof
+python -m pytest tests/ -q             # 64 tests, including the boundary proof
 ```
 
 The dashboard:
@@ -263,7 +263,7 @@ evaluation/    adapter (the only place both halves meet), baselines,
 web/           Express API + React dashboard
 ```
 
-**~7,900 lines of Python, ~1,100 of JS/JSX, 32 tests.**
+**~8,600 lines of Python, ~2,000 of JS/JSX, 64 tests.**
 
 Full design rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
