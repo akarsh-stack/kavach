@@ -134,6 +134,15 @@ def main() -> int:
             f"({r.decisions} decisions, {time.time() - t0:.1f}s)"
         )
 
+    # Flush the cache tail. It writes every `flush_every` decisions, so without
+    # this the final partial batch is lost -- which means a fresh clone replays
+    # most of a run and then hits a ReplayMiss on the last few decisions. Caught
+    # by cloning to /tmp and running it, not by any test.
+    for pol in policies:
+        cl = getattr(pol, "client", None)
+        if cl is not None and hasattr(cl, "save"):
+            cl.save()
+
     print()
     # Report against the slice, not the full month, or the recovery rate
     # denominator would be five times too large.

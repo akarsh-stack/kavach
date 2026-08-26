@@ -83,6 +83,13 @@ def main() -> int:
     t0 = time.time()
     points = sens.sweep(make, seed=args.seed, limit=args.limit)
     print(f"\n{grid} points in {time.time() - t0:.1f}s\n")
+    if args.engine != "none":
+        # Same tail-flush as run_eval: the sweep records new decisions on its
+        # first grid point and they must reach disk.
+        cl = locals().get("client")
+        if cl is not None and hasattr(cl, "save"):
+            cl.save()
+
     print(sens.report(points, subject=subject))
 
     if args.save:

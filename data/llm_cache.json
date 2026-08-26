@@ -396,6 +396,17 @@
 "recovery_class": "switch_rail"
 }
 },
+"05bff1e6ae8a3f442834b0c8ff6d2ba2": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 4.0,
+"rationale": "Reason maps to retry_later_funds; one attempt remains, waiting a few hours lets the daily limit reset before retrying.",
+"recovery_class": "retry_later_funds"
+}
+},
 "05caf4e86597a8b4102c87d2fe3db2b4": {
 "model": "gpt-oss:120b",
 "value": {
@@ -1593,6 +1604,17 @@
 "delay_hours": 0.0,
 "rationale": "The failure is due to payment_session_expired, not funds. Send a fresh payment link immediately via WhatsApp to prompt the customer to complete the one\u2011off UPI payment.",
 "recovery_class": "nudge_customer"
+}
+},
+"1638b0d978c10fb2d917363544571e88": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Insufficient funds requires a later retry, but the payment has already reached the maximum of 3 recovery attempts, so no further action is allowed.",
+"recovery_class": "retry_later_funds"
 }
 },
 "166566f777975d140e2dd7143b4dca9a": {
@@ -4310,6 +4332,17 @@
 "delay_hours": 1.0,
 "rationale": "Authentication failed likely due to missed or incorrect OTP. A gentle reminder after a short wait can prompt the user to complete the 3D secure step, preserving the standing mandate and revenue.",
 "recovery_class": "nudge_customer"
+}
+},
+"3d70cc64bfe1fd1c5ca54444a2bcb96b": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.9,
+"delay_hours": 0.0,
+"rationale": "The failure is due to daily transaction limit; 24\u202fhours have passed, likely resetting the limit, so a silent retry now is appropriate.",
+"recovery_class": "retry_later_funds"
 }
 },
 "3d838e4ae8fb75b6c87a6c60425a4842": {
@@ -7161,6 +7194,17 @@
 "recovery_class": "hard_stop"
 }
 },
+"67588d21e8ff46242cdc9e193d3fa025": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Insufficient funds maps to retry_later_funds, but the payment already hit the max of 3 attempts and 2 messages, so no further recovery actions are allowed.",
+"recovery_class": "retry_later_funds"
+}
+},
 "679c5d1b0542a42f157cc0553d45507f": {
 "model": "gpt-oss:120b",
 "value": {
@@ -7621,6 +7665,17 @@
 "delay_hours": 0.0,
 "rationale": "Risk check failure persisted after 5 retries and 5 messages. Immediate switch to an alternative payment method (e.g., card or different UPI app) offers the highest recovery chance without further customer friction.",
 "recovery_class": "switch_rail"
+}
+},
+"6e03879012bf0c6df45460a7598cc552": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Reason maps to retry_later_funds, but 3 recovery attempts already used; cannot retry or nudge, and waiting for limit reset requires a new attempt which exceeds the limit.",
+"recovery_class": "retry_later_funds"
 }
 },
 "6e06d3ace4c08f573d6a8638829cc609": {
@@ -8336,6 +8391,17 @@
 "delay_hours": 0.0,
 "rationale": "Razorpay maps 'payment_declined' to switch_rail, meaning the wallet instrument is dead; retrying would waste attempts.",
 "recovery_class": "switch_rail"
+}
+},
+"77268ec45c9c72023266157bed697870": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.9,
+"delay_hours": 0.0,
+"rationale": "Insufficient funds require the customer to add money; we have one message left and a high amount, so a WhatsApp nudge with a fresh link is the best chance to recover.",
+"recovery_class": "retry_later_funds"
 }
 },
 "7726f2cbaa9a12f22c2081038bb88672": {
@@ -9722,6 +9788,17 @@
 "delay_hours": 0.0,
 "rationale": "Four decline attempts suggest a persistent issue (e.g., UPI limits or bank block). Switching to another payment rail (card/Netbanking) offers the quickest path to recover Rs\u202f535.50.",
 "recovery_class": "switch_rail"
+}
+},
+"89ffad6dbdbbae87a095e2f0d97693a1": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "payment_timed_out maps to nudge_customer, but 3 attempts and 2 messages already used (max limits), so no further retry, switch, or nudge is allowed.",
+"recovery_class": "nudge_customer"
 }
 },
 "8a1b3b7b0412910e0f40bc97240ba7d9": {
@@ -12045,6 +12122,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"aa2a2174f22b74c73685d912e7250212": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Authentication_failed maps to nudge_customer, but the payment already hit the 2\u2011message limit for this payment and week; retrying is not advised for auth failures, so we must stop.",
+"recovery_class": "nudge_customer"
+}
+},
 "aa2fe5e66c1376774acb9393ad621ec6": {
 "model": "gpt-oss:120b",
 "value": {
@@ -12760,6 +12848,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"b39c5113fb3896b24bc18842d3af9f90": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.93,
+"delay_hours": 0.0,
+"rationale": "Insufficient funds; customer needs to add money before retry. Prompt with a fresh payment link now to let them fund the account.",
+"recovery_class": "retry_later_funds"
+}
+},
 "b3a1e06261fb4eeec2ceafd570d56ca8": {
 "model": "gpt-oss:120b",
 "value": {
@@ -12835,6 +12934,17 @@
 "delay_hours": 0.0,
 "rationale": "Failure due to invalid VPA is a user entry error. Retrying the same VPA will likely repeat the failure. Prompt the customer to verify and re-enter the correct VPA via a friendly WhatsApp message to recover the Rs\u202f266.64.",
 "recovery_class": "nudge_customer"
+}
+},
+"b4a45ee5f9b42ad25606f00a110fa5bb": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 2.0,
+"rationale": "Insufficient funds maps to retry_later_funds; one retry remains, so schedule a silent retry after a short delay to let the customer add funds.",
+"recovery_class": "retry_later_funds"
 }
 },
 "b4aa8667687b467aea1964177d3c45ad": {
@@ -16266,6 +16376,17 @@
 "confidence": 0.78,
 "delay_hours": 24.0,
 "rationale": "Insufficient funds is a customer\u2011side issue. After 7 attempts and 6 messages, further retries now are unlikely to succeed. Nudge the customer to add funds and schedule a retry after a day, balancing recovery chance with message fatigue.",
+"recovery_class": "retry_later_funds"
+}
+},
+"e72ec85af87b17694a5e96ef7c336b0f": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "Insufficient funds error maps to retry_later_funds; prompt the customer to add money and retry via a WhatsApp payment link.",
 "recovery_class": "retry_later_funds"
 }
 },
