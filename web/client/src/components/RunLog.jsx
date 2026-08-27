@@ -59,7 +59,7 @@ function colourise(line) {
   return out;
 }
 
-export default function RunLog({ log, running }) {
+export default function RunLog({ log, running, failed }) {
   const [open, setOpen] = useSticky("console-open", true);
   const bodyRef = useRef(null);
   const pinned = useRef(true);
@@ -95,7 +95,16 @@ export default function RunLog({ log, running }) {
           <i style={{ background: "#2fbf71" }} />
         </span>
         <span className="console-title">
-          run_eval.py {running ? "· running" : "· finished"}
+          run_eval.py{" "}
+          {running ? (
+            "· running"
+          ) : failed ? (
+            // "finished" for a run that aborted reads as success, and the
+            // abort reason scrolls past in a collapsed pane.
+            <span className="log-bad">· aborted</span>
+          ) : (
+            "· finished"
+          )}
         </span>
         {running && (
           <span

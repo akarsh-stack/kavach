@@ -29,6 +29,7 @@ export default function App() {
   const [run, setRun] = useState(null);
   const [sens, setSens] = useState(null);
   const [error, setError] = useState("");
+  const [runError, setRunError] = useState("");
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState([]);
   const [dismissed, setDismissed] = useState(false);
@@ -66,12 +67,23 @@ export default function App() {
   const start = ({ engine, limit }) => {
     setRunning(true);
     setLog([]);
+    setRunError("");
     setDismissed(false);
     evaluate(
       { limit, seed: 42, engine },
       (l) => setLog((prev) => [...prev, l]),
-      async () => {
+      // The outcome used to be dropped on the floor: this callback took no
+      // arguments, so a run that aborted -- a replay miss, a fatal model error,
+      // or a 409 because another run was already going -- stopped the spinner
+      // and loaded `latest` anyway, showing the PREVIOUS run's numbers as
+      // though they were the new ones. The 409 case printed nothing at all,
+      // because no process starts and the log pane hides itself when empty.
+      async (result) => {
         setRunning(false);
+        if (result && result.code !== 0) {
+          setRunError(result.error || `the run exited with code ${result.code}`);
+          return;
+        }
         await load("latest");
       },
     );
@@ -124,6 +136,19 @@ export default function App() {
         </div>
       )}
 
+      {runError && (
+        <div className="alert rise" style={{ "--tone": "var(--danger)" }}>
+          <span className="alert-icon">
+            <Icon.Alert />
+          </span>
+          <div className="alert-body">
+            <strong>That run did not finish</strong>
+            {runError}. The figures below are the previous result, unchanged —
+            nothing from the failed run was loaded.
+          </div>
+        </div>
+      )}
+
       {stubbed && !dismissed && (
         <div className="alert rise" style={{ "--tone": "var(--danger)" }}>
           <span className="alert-icon">
@@ -145,7 +170,7 @@ export default function App() {
         </div>
       )}
 
-      <RunLog log={log} running={running} />
+      <RunLog log={log} running={running} failed={Boolean(runError)} />
 
       {run && (
         <>
