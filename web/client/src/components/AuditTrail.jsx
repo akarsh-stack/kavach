@@ -50,7 +50,7 @@ const resultText = (e) => {
 
 const PAGE = 25;
 
-export default function AuditTrail({ audits }) {
+export default function AuditTrail({ audits, policies }) {
   const names = Object.keys(audits || {});
   const [policy, setPolicy] = useState(() => mostInteresting(audits));
   const [view, setView] = useState("blocked");
@@ -75,6 +75,20 @@ export default function AuditTrail({ audits }) {
     return list;
   }, [audit, view, query]);
 
+  // The artifact caps stored entries (evaluation/artifacts.py, audit_limit).
+  // Without saying so, selecting "All" and reading "400 of 924" looks like a
+  // filter that is still filtering.
+  const stored = audit?.entries?.length ?? 0;
+  const total = audit?.total_entries ?? 0;
+  const truncated = total > stored;
+
+  // A zero here means two very different things. The baselines deliberately run
+  // with no policy layer; the agent has one and simply never tripped it. Saying
+  // "it never proposed a blocked action" about a policy that has no blocker at
+  // all credits it with restraint it does not have.
+  const guardrailsOff =
+    policies?.find((p) => p.policy === policy)?.enforce_guardrails === false;
+
   if (!names.length) return <Empty>No audit trail in this run.</Empty>;
 
   return (
@@ -83,6 +97,7 @@ export default function AuditTrail({ audits }) {
         <span className="select">
           <select
             value={policy}
+            aria-label="Audited policy"
             onChange={(e) => {
               setPolicy(e.target.value);
               setLimit(PAGE);
@@ -134,16 +149,26 @@ export default function AuditTrail({ audits }) {
           />
         </span>
 
-        <span className="audit-count">
-          {entries.length} of {audit?.total_entries ?? 0}
+        <span
+          className="audit-count"
+          title={
+            truncated
+              ? `The artifact stores the first ${stored} decisions of ${total}, overruled ones first, so nothing blocked is ever dropped.`
+              : undefined
+          }
+        >
+          {entries.length} of {total}
+          {truncated && <span className="audit-trunc"> · first {stored} kept</span>}
         </span>
       </div>
 
       {entries.length === 0 ? (
         <Empty>
-          {view === "blocked"
-            ? "Nothing was overruled for this policy — it never proposed a blocked action."
-            : "No entries match this filter."}
+          {view !== "blocked"
+            ? "No entries match this filter."
+            : guardrailsOff
+              ? "This policy runs with the policy layer switched off — that is the point of it, so nothing here can be overruled."
+              : "Nothing was overruled for this policy — every action it proposed was already within the rules."}
         </Empty>
       ) : (
         <>

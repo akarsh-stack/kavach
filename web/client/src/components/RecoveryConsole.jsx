@@ -69,11 +69,19 @@ function Stat({ label, value, prefix = "", accent, foot, animate = true }) {
 
 function Step({ step, last }) {
   const blocked = step.proposed !== step.action;
+  // A deferral leaves the action alone and only moves it in time, so
+  // `proposed !== action` is false and it used to render as a plain allow.
+  // That hid every quiet-hours hold — 28 of them in the reference run, and the
+  // only visible thing the policy layer does to the agent, since it vetoes
+  // nothing. The guardrail was working and the console showed no sign of it.
+  const deferred = !blocked && step.verdict === "defer";
   const tone = step.succeeded
     ? "var(--success)"
     : blocked
       ? "var(--danger)"
-      : "var(--text-4)";
+      : deferred
+        ? "var(--warning)"
+        : "var(--text-4)";
   return (
     <div className="step">
       <span className="step-rail">
@@ -89,12 +97,14 @@ function Step({ step, last }) {
           </span>
           {step.succeeded && <Badge tone="success">recovered</Badge>}
           {blocked && <Badge tone="danger">{step.rule}</Badge>}
+          {deferred && <Badge tone="warning">{step.rule}</Badge>}
         </div>
         {blocked && step.explanation && (
           <div className="step-why">
             Model proposed <span className="mono">{step.proposed}</span> — {step.explanation}
           </div>
         )}
+        {deferred && step.explanation && <div className="step-why">{step.explanation}</div>}
       </div>
     </div>
   );
@@ -173,7 +183,7 @@ function PaymentCard({ p, open, onToggle }) {
 
 const PAGE = 20;
 
-export default function RecoveryConsole({ workflow }) {
+export default function RecoveryConsole({ workflow, ledger }) {
   const [state, setState] = useState("needs_human");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState(null);
@@ -200,6 +210,19 @@ export default function RecoveryConsole({ workflow }) {
     return l;
   }, [workflow, state, query]);
 
+  // The policy layer has two ways to intervene: veto an action outright, or
+  // defer it to a later time. Only vetoes are counted in `blocked_actions`, and
+  // for the agent that count is zero — which read as "the guardrails are not
+  // wired up" until the deferrals were shown alongside it.
+  const deferred = useMemo(
+    () =>
+      (workflow?.payments || []).reduce(
+        (n, p) => n + p.steps.filter((s) => s.verdict === "defer").length,
+        0,
+      ),
+    [workflow],
+  );
+
   if (!workflow) return <Empty>No recovery run loaded yet.</Empty>;
   const t = workflow.totals;
 
@@ -221,7 +244,20 @@ export default function RecoveryConsole({ workflow }) {
             prefix="₹"
             value={t.recovered_paise}
             accent="var(--success)"
-            foot={`${t.recovered_count} payments · ₹${rs(t.spent_paise)} spent chasing`}
+            // Gross, so it does not equal the net headline on the Evidence
+            // tab. `spent_paise` is only cash spent on actions -- it excludes
+            // Razorpay's MDR on the recovered amount and the imputed goodwill
+            // cost of contacting people. Subtracting it from gross therefore
+            // does NOT land on net, and a judge doing that arithmetic and
+            // getting a third number is the fastest way to lose them. So state
+            // net here and let the Evidence cost stack itemise the rest.
+            foot={
+              ledger
+                ? `${t.recovered_count} payments · ₹${rs(t.spent_paise)} spent chasing · ₹${rs(
+                    ledger.net_paise,
+                  )} net of all costs`
+                : `${t.recovered_count} payments · ₹${rs(t.spent_paise)} spent chasing`
+            }
           />
         </div>
         <div className="rise rise-3">
@@ -239,7 +275,11 @@ export default function RecoveryConsole({ workflow }) {
             value={t.blocked_actions}
             animate={false}
             accent="var(--series-3)"
-            foot="stopping rules that fired on the model"
+            foot={
+              t.blocked_actions === 0
+                ? `nothing the model proposed had to be vetoed · ${deferred} actions deferred`
+                : `vetoed by the policy layer · ${deferred} more deferred`
+            }
           />
         </div>
       </div>
@@ -249,8 +289,9 @@ export default function RecoveryConsole({ workflow }) {
           <h2>Recovery queue</h2>
           <p className="note">
             Every failed payment the agent is working, ordered by what wants attention
-            first. Expand one to see the bounded workflow it executed — and where the
-            policy layer overruled the model.
+            first. Expand one to see the bounded workflow it executed: what it
+            diagnosed, why, and every action the policy layer allowed, deferred or
+            vetoed on the way.
           </p>
         </div>
 

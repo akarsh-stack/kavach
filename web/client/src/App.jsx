@@ -146,7 +146,14 @@ export default function App() {
             </button>
           </div>
 
-          {tab === "console" && <RecoveryConsole workflow={run.workflow} />}
+          {tab === "console" && (
+            <RecoveryConsole
+              workflow={run.workflow}
+              ledger={
+                run.policies?.find((p) => p.policy === run.workflow.policy)?.ledger
+              }
+            />
+          )}
         </>
       )}
 
@@ -233,7 +240,7 @@ export default function App() {
                 </>
               }
             >
-              <AuditTrail audits={run.audits} />
+              <AuditTrail audits={run.audits} policies={run.policies} />
             </Card>
           </div>
         </>

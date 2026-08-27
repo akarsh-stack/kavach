@@ -1088,6 +1088,10 @@ td .muted {
   margin-left: auto;
 }
 
+.audit-trunc {
+  color: var(--text-4);
+}
+
 .audit-list {
   display: flex;
   flex-direction: column;
