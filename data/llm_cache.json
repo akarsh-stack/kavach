@@ -693,6 +693,17 @@
 "recovery_class": "retry_later_funds"
 }
 },
+"0957c95a6edb54431996480a26f5b082": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.73,
+"delay_hours": 0.0,
+"rationale": "5 retries already attempted with same UPI app; gateway error likely user\u2011side (e.g., app glitch or insufficient funds). Nudging to try a different UPI app or card can recover payment without further retries.",
+"recovery_class": "nudge_customer"
+}
+},
 "09d4c5ca6df8ac221de04da130a2a7d5": {
 "model": "gpt-oss:120b",
 "value": {
@@ -1023,6 +1034,17 @@
 "recovery_class": "retry_same"
 }
 },
+"0e6bc62abcab2a8a1fbd2702612d408c": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "email",
+"confidence": 0.78,
+"delay_hours": 0.0,
+"rationale": "Six retries and three messages indicate low likelihood of success via the same UPI link. No gateway downtime observed, so issue likely specific to GPAY/PNB. Offering an alternative payment method (card or another UPI app) maximizes recovery without further spamming.",
+"recovery_class": "switch_rail"
+}
+},
 "0e6c4143b4efd493bebbc6fe7090ee43": {
 "model": "gpt-oss:120b",
 "value": {
@@ -1043,6 +1065,17 @@
 "delay_hours": 24.0,
 "rationale": "Failure due to insufficient funds; customer likely needs to add money. Send a friendly reminder now and schedule an automatic retry in 24h to capture the payment once funds are available.",
 "recovery_class": "retry_later_funds"
+}
+},
+"0e81923c3a4571b9e247bfdfd0abf21b": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.78,
+"delay_hours": 0.5,
+"rationale": "Three gateway attempts failed without a specific error; likely user didn't complete the UPI flow. A brief WhatsApp reminder can prompt the customer to retry, maximizing chance of recovery without being intrusive.",
+"recovery_class": "nudge_customer"
 }
 },
 "0e9e1ade59585d053c0665724957b4d4": {
@@ -4851,6 +4884,17 @@
 "recovery_class": "retry_same"
 }
 },
+"4552d4eec803dcfae54b8b974a2c624b": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "whatsapp",
+"confidence": 0.78,
+"delay_hours": 0.0,
+"rationale": "Four retries already failed with a generic gateway error; no downtime reported. Likely transient issue with GPAY/PNB. Offer the customer an alternative payment method (e.g., another UPI app or card) now to recover the Rs 929.80.",
+"recovery_class": "switch_rail"
+}
+},
 "45a694318d1946e8e8b744a35512c4b2": {
 "model": "gpt-oss:120b",
 "value": {
@@ -5685,6 +5729,17 @@
 "delay_hours": 0.5,
 "rationale": "payment_timed_out maps to nudge_customer, but message quota is exhausted; a silent retry as the third attempt after a short delay is the only viable option.",
 "recovery_class": "nudge_customer"
+}
+},
+"51b1652e4ff57d4765233b1039c216b1": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": "whatsapp",
+"confidence": 0.78,
+"delay_hours": 0.5,
+"rationale": "Gateway error likely transient; retrying same UPI method after brief wait maximizes chance of success without annoying user.",
+"recovery_class": "retry_same"
 }
 },
 "51c24f0b62243a42fb6ec8e3c3757b4c": {
@@ -6708,6 +6763,17 @@
 "delay_hours": 2.0,
 "rationale": "Payment declined by issuer (CANARA) likely due to insufficient wallet balance or customer lock. After 4 retries, further auto-retries unlikely succeed. Gently nudge customer to check wallet balance or resolve any block, giving a short wait before contacting.",
 "recovery_class": "nudge_customer"
+}
+},
+"5ecf7d60f598eaaee89a522be4b5a81c": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "sms",
+"confidence": 0.78,
+"delay_hours": 0.5,
+"rationale": "Seven retries and four messages indicate persistent failure. No known downtime, generic gateway error suggests user/app issue. Switching to an alternative UPI app or card gives the best chance to recover the high-value payment without further spamming.",
+"recovery_class": "switch_rail"
 }
 },
 "5edb0893d70ce9b4345ec2ac9072bc00": {
@@ -14322,6 +14388,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"c55a5648a327d7b17111a4d9c77c8c06": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.68,
+"delay_hours": 2.0,
+"rationale": "Gateway error likely transient; a third retry after a short wait may succeed. No prior messages, so automatic retry is preferable before contacting the customer.",
+"recovery_class": "retry_same"
+}
+},
 "c58e26ee2b55dcacd3aaf9cbf1c6aabc": {
 "model": "gpt-oss:120b",
 "value": {
@@ -15519,6 +15596,17 @@
 "delay_hours": 0.0,
 "rationale": "Incorrect PIN is a user input error; we have already sent the maximum 2 messages and used 2 attempts, so further nudges or retries would waste resources. Stopping is the only viable option.",
 "recovery_class": "nudge_customer"
+}
+},
+"d67d5660ecf723e936305ecc77fcaf7d": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.78,
+"delay_hours": 1.0,
+"rationale": "Gateway error likely transient for UPI (GPAY) with PNB. No specific error code and no recent systemic issues. First recovery attempt, so retry same method after short delay to capture payment.",
+"recovery_class": "retry_same"
 }
 },
 "d6a51516fac806fc2d1d8f3e9991a674": {

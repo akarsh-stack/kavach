@@ -1,0 +1,108 @@
+import { useEffect, useState } from "react";
+
+import { getCapabilities } from "../api.js";
+
+/**
+ * The run toolbar, constrained to what this machine can actually do.
+ *
+ * Previously it offered every engine unconditionally. Choosing one without a
+ * key fell through to replay, and replay only covers the recorded batch size —
+ * so "Groq" at 300 payments produced a Python traceback in the log pane. A
+ * judge clicking a dropdown must not be able to reach that.
+ *
+ * So the server reports which providers have credentials and what the cache
+ * covers, and this component:
+ *
+ *   - disables engines with no key, and says which key is missing
+ *   - pins the batch size when the run will be replayed, because any other
+ *     size is a guaranteed cache miss
+ *   - defaults to a combination that works
+ */
+export default function RunControls({ running, onRun }) {
+  const [caps, setCaps] = useState(null);
+  const [engine, setEngine] = useState("");
+  const [limit, setLimit] = useState(150);
+
+  useEffect(() => {
+    getCapabilities()
+      .then((c) => {
+        setCaps(c);
+        // Prefer a live model, then the recorded run, then baselines. Never
+        // land on something that cannot run.
+        const first = ["ollama", "gemini", "groq", "anthropic", "replay", "none"].find(
+          (id) => c.engines.find((e) => e.id === id)?.available,
+        );
+        setEngine(first || "none");
+        if (first === "replay" && c.cache?.limit) setLimit(c.cache.limit);
+      })
+      .catch(() => setCaps({ engines: [{ id: "none", label: "No model", available: true }] }));
+  }, []);
+
+  if (!caps) {
+    return <div className="toolbar" style={{ opacity: 0.5 }}>loading…</div>;
+  }
+
+  const isReplay = engine === "replay";
+  const cachedLimit = caps.cache?.limit ?? 150;
+  const sizes = isReplay ? [cachedLimit] : [100, 150, 300, 600];
+
+  const pick = (id) => {
+    setEngine(id);
+    if (id === "replay") setLimit(cachedLimit);
+  };
+
+  return (
+    <div>
+      <div className="toolbar">
+        <span className="select">
+          <select
+            value={engine}
+            onChange={(e) => pick(e.target.value)}
+            disabled={running}
+            aria-label="Decision engine"
+          >
+            {caps.engines.map((e) => (
+              <option key={e.id} value={e.id} disabled={!e.available}>
+                {e.available ? e.label : `${e.label} — ${e.why || "unavailable"}`}
+              </option>
+            ))}
+          </select>
+        </span>
+
+        <span className="select">
+          <select
+            value={limit}
+            onChange={(ev) => setLimit(Number(ev.target.value))}
+            disabled={running || isReplay}
+            aria-label="Batch size"
+            title={isReplay ? `The recorded run covers ${cachedLimit} payments` : undefined}
+          >
+            {sizes.map((n) => (
+              <option key={n} value={n}>
+                {n} failures
+              </option>
+            ))}
+          </select>
+        </span>
+
+        <button className="btn btn-primary" onClick={() => onRun({ engine, limit })} disabled={running}>
+          {running && <span className="spinner" />}
+          {running ? "Running…" : "Run evaluation"}
+        </button>
+      </div>
+
+      {isReplay && (
+        <p className="toolbar-note">
+          Replaying {caps.cache.entries.toLocaleString()} recorded decisions from{" "}
+          <code>{caps.cache.model}</code>. Batch size is fixed at {cachedLimit} — that is
+          what the committed cache covers, and any other size would miss.
+        </p>
+      )}
+      {!isReplay && engine !== "none" && (
+        <p className="toolbar-note">
+          Live run against <code>{engine}</code>. New decisions are recorded to the cache.
+        </p>
+      )}
+    </div>
+  );
+}

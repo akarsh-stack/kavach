@@ -26,6 +26,33 @@ const RUNS = path.join(REPO, "data", "runs");
 // an address-in-use error.
 const PORT = process.env.API_PORT || 5174;
 
+// Load .env ourselves. The server is started by npm and does not inherit a
+// shell that sourced it, so without this every provider reports 'no key' and
+// the UI disables engines that actually work. No dependency needed.
+//
+// Parsed without regex on purpose: this file has been mangled twice by
+// escape handling in tooling, and indexOf cannot be mis-escaped.
+function loadDotEnv() {
+  let text;
+  try {
+    text = fs.readFileSync(path.join(REPO, '.env'), 'utf-8');
+  } catch {
+    return; // no .env is a perfectly valid state
+  }
+  const NL = String.fromCharCode(10);
+  for (const raw of text.split(NL)) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq < 1) continue;
+    const key = line.slice(0, eq).trim();
+    const value = line.slice(eq + 1).trim();
+    // Never override something already in the environment.
+    if (key && !process.env[key]) process.env[key] = value;
+  }
+}
+loadDotEnv();
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -44,6 +71,67 @@ const readRun = (name) => {
   }
   return null;
 };
+
+/**
+ * What this machine can actually do right now.
+ *
+ * The UI used to offer every engine unconditionally. Picking one without a key
+ * fell through to replay, and replay only covers the recorded batch size -- so
+ * choosing "Groq" at 300 payments produced a Python traceback in the log pane.
+ * A judge clicking a dropdown must not be able to reach that.
+ *
+ * The server knows which keys exist and what the cache covers, so it says so
+ * and the UI disables the rest.
+ */
+app.get("/api/capabilities", (_req, res) => {
+  const has = (k) => Boolean(process.env[k] && process.env[k].trim());
+
+  let cached = { entries: 0, model: null, limit: null };
+  try {
+    const raw = JSON.parse(
+      fs.readFileSync(path.join(REPO, "data", "llm_cache.json"), "utf-8"),
+    );
+    const entries = Object.values(raw.entries || {});
+    const counts = {};
+    for (const e of entries) counts[e.model] = (counts[e.model] || 0) + 1;
+    const model = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || null;
+    cached = { entries: entries.length, model, limit: 150 };
+  } catch {
+    /* no cache is a valid state */
+  }
+
+  res.json({
+    engines: [
+      { id: "none", label: "No model · 3 baselines", available: true },
+      {
+        id: "ollama",
+        label: "Ollama",
+        available: has("OLLAMA_API_KEY"),
+        why: "needs OLLAMA_API_KEY",
+      },
+      {
+        id: "gemini",
+        label: "Gemini",
+        available: has("GEMINI_API_KEY"),
+        why: "needs GEMINI_API_KEY (free)",
+      },
+      {
+        id: "groq",
+        label: "Groq",
+        available: has("GROQ_API_KEY"),
+        why: "needs GROQ_API_KEY (free)",
+      },
+      {
+        id: "anthropic",
+        label: "Anthropic",
+        available: has("ANTHROPIC_API_KEY"),
+        why: "needs ANTHROPIC_API_KEY",
+      },
+      { id: "replay", label: "Replay recorded run", available: cached.entries > 0 },
+    ],
+    cache: cached,
+  });
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, repo: REPO, runsDir: RUNS });
@@ -119,7 +207,7 @@ const sseHeaders = (res) => {
 function buildArgs(query) {
   const limit = String(parseInt(query.limit, 10) || 300);
   const seed = String(parseInt(query.seed, 10) || 42);
-  const allowed = ["none", "ollama", "gemini", "groq", "anthropic", "stub"];
+  const allowed = ["none", "ollama", "gemini", "groq", "anthropic", "stub", "replay"];
   const engine = allowed.includes(query.engine) ? query.engine : "none";
 
   const args = [

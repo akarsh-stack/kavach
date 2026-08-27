@@ -23,7 +23,8 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from agent.llm import build_client  # noqa: E402
+from agent.cache import CACHED_LIMIT, ReplayMiss  # noqa: E402
+from agent.llm import FatalLLMError, build_client  # noqa: E402
 from evaluation import report as rep  # noqa: E402
 from evaluation.baselines import build_all, build_non_llm  # noqa: E402
 from evaluation.harness import run_policy  # noqa: E402
@@ -38,7 +39,7 @@ def main() -> int:
     ap.add_argument("--no-llm", action="store_true", help="skip policies needing a model")
     ap.add_argument("--stub", action="store_true", help="force the stub even if a key exists")
     ap.add_argument("--engine", default="ollama",
-                    choices=["ollama", "gemini", "groq", "anthropic", "stub"])
+                    choices=["ollama", "gemini", "groq", "anthropic", "stub", "replay"])
     ap.add_argument("--model", default="",
                     help="default: qwen2.5:7b for ollama, claude-haiku-4-5 for anthropic")
     ap.add_argument("--effort", default="low", help="anthropic only")
@@ -100,6 +101,19 @@ def main() -> int:
                 engine="anthropic", prefer_stub=args.stub, model=model, effort=args.effort
             )
             wave = args.wave
+        elif args.engine == "replay":
+            client = build_client(engine="replay")
+            print(f"  engine: replay / {getattr(client, 'model', '?')}  (recorded, offline)")
+            # wave=1 is exact sequential simulation. A wider wave changes the
+            # interleaving, and for policies that SATURATE a shared cap that
+            # changes the result: naive_llm nets -34,119 at wave 1 and 8, and
+            # -34,240 at wave 24, because it exhausts per-customer contact
+            # limits and the order it hits them in matters. The agent is
+            # identical at every wave -- it never saturates anything.
+            #
+            # Replay exists to reproduce published numbers exactly, and it
+            # costs nothing here because every decision comes off disk.
+            wave = 1
         else:
             # gemini / groq -- free tiers, no cost estimate to print.
             client = build_client(
@@ -119,15 +133,44 @@ def main() -> int:
     for policy in policies:
         t0 = time.time()
         print(f"  running {policy.name:<22}", end="", flush=True)
-        r = run_policy(
-            policy,
-            world,
-            failures,
-            stats["customer_history"],
-            limit=args.limit,
-            batch_budget_paise=budget,
-            wave=wave if policy.uses_llm else 1,
-        )
+        try:
+            r = run_policy(
+                policy,
+                world,
+                failures,
+                stats["customer_history"],
+                limit=args.limit,
+                batch_budget_paise=budget,
+                wave=wave if policy.uses_llm else 1,
+            )
+        except ReplayMiss:
+            print()
+            print()
+            print("  ---------------------------------------------------------------")
+            print("  This batch has no recorded decisions to replay.")
+            print()
+            print(f"  The committed cache covers the {CACHED_LIMIT}-payment batch only.")
+            print(f"  You asked for {args.limit}, with no live model available.")
+            print()
+            print("  Either:")
+            print(f"    - set the batch size back to {CACHED_LIMIT}, or")
+            print("    - add a provider key to .env (GEMINI_API_KEY is free) and")
+            print("      re-run to record this batch")
+            print()
+            print("  Replaying a partial cache would publish different numbers from")
+            print("  the ones in the README, so it aborts instead.")
+            print("  ---------------------------------------------------------------")
+            return 2
+        except FatalLLMError as exc:
+            print()
+            print()
+            print(f"  Run aborted: {exc}")
+            print()
+            print("  Deliberately fatal. A failed decision defaults to 'stop', so")
+            print("  continuing would produce a full set of results in which the")
+            print("  agent quietly did nothing.")
+            return 2
+
         results.append(r)
         print(
             f" net Rs {r.ledger.net_paise() / 100:>10,.0f}  "

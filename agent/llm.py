@@ -424,6 +424,23 @@ def build_client(
 
         return CachedClient(client)
 
+    if engine == "replay":
+        # Recorded decisions ONLY. Never falls through to a live backend, even
+        # when one is reachable.
+        #
+        # This existed as "point it at a provider and let the cache absorb it",
+        # which was wrong: a cache miss quietly became a live call, and
+        # gpt-oss:120b is not bit-deterministic at temperature 0 even though we
+        # ask it to be. A UI "replay" run reproduced the agent exactly and
+        # naive_llm 121 rupees off, because a handful of decisions were
+        # recomputed rather than replayed. Replay has to mean replay or it
+        # proves nothing.
+        from agent.cache import ReplayClient
+
+        rc = ReplayClient()
+        print(f"  [llm] replay: {rc.available} recorded decisions from {rc.model}")
+        return rc
+
     if prefer_stub or engine == "stub":
         # The stub is cached too, so a stub run is reproducible as well -- and
         # its entries carry engine "stub", so they can never be mistaken for a

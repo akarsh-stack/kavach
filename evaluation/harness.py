@@ -148,9 +148,17 @@ def run_policy(
             # finish in minutes rather than half an hour. The approximation:
             # payments inside one wave all observe the state as of the start of
             # the wave, so a customer with two failures in the same wave sees
-            # the pre-wave contact count for both. Rare, and it can only ever
-            # make a policy look *worse* on contact caps, never better -- so it
-            # cannot flatter our own agent.
+            # the pre-wave contact count for both.
+            #
+            # Measured, not assumed: for a policy that SATURATES a shared cap
+            # this changes the result. naive_llm nets -34,119 at wave 1 and 8
+            # and -34,240 at wave 24. The agent is bit-identical at every wave,
+            # because it never exhausts a contact limit in the first place.
+            #
+            # So the effect is real but one-directional: it can only make an
+            # over-contacting policy look worse, never better, and it cannot
+            # flatter our own agent. Published runs use wave <= 8 and replay
+            # pins wave=1 for exactness.
             popped: list[_Event] = []
             while queue and len(popped) < wave:
                 popped.append(heapq.heappop(queue))

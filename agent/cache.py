@@ -53,6 +53,15 @@ T = TypeVar("T", bound=BaseModel)
 
 DEFAULT_PATH = pathlib.Path(__file__).resolve().parent.parent / "data" / "llm_cache.json"
 
+CACHED_LIMIT = 150
+"""Batch size the committed cache was recorded against.
+
+Replay is exact: the cache key includes the observation, and a different batch
+size produces different observations from the very first payment. So replaying
+any other size is a guaranteed miss, and the UI needs to know that up front
+rather than discovering it mid-run.
+"""
+
 
 def _key(model: str, schema_name: str, system: str, user: str) -> str:
     h = hashlib.blake2b(digest_size=16)

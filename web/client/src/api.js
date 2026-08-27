@@ -10,6 +10,7 @@ const j = async (url) => {
 export const getRun = (name = "latest") => j(`/api/run/${name}`);
 export const getSensitivity = () => j("/api/sensitivity");
 export const listRuns = () => j("/api/runs");
+export const getCapabilities = () => j("/api/capabilities");
 
 /**
  * Start an evaluation, then watch it.

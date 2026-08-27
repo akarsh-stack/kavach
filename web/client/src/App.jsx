@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { evaluate, getRun, getSensitivity } from "./api.js";
 import AuditTrail from "./components/AuditTrail.jsx";
 import RecoveryConsole from "./components/RecoveryConsole.jsx";
+import RunControls from "./components/RunControls.jsx";
 import RunLog from "./components/RunLog.jsx";
 import CostStack from "./components/CostStack.jsx";
 import DiagnosisTable from "./components/DiagnosisTable.jsx";
@@ -11,14 +12,6 @@ import PolicyBars from "./components/PolicyBars.jsx";
 import SensitivityGrid from "./components/SensitivityGrid.jsx";
 import { Icon } from "./components/ui.jsx";
 
-const ENGINES = [
-  ["none", "No model · 3 baselines"],
-  ["ollama", "Ollama · local or cloud"],
-  ["gemini", "Gemini · free tier"],
-  ["groq", "Groq · free tier"],
-  ["anthropic", "Anthropic"],
-  ["stub", "Stub · plumbing only"],
-];
 
 function Card({ title, note, children, className = "", delay = 1 }) {
   return (
@@ -38,8 +31,6 @@ export default function App() {
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState([]);
-  const [engine, setEngine] = useState("none");
-  const [limit, setLimit] = useState(300);
   const [dismissed, setDismissed] = useState(false);
   const [tab, setTab] = useState("console");
   const [source, setSource] = useState("reference");
@@ -70,7 +61,7 @@ export default function App() {
     load();
   }, [load]);
 
-  const start = () => {
+  const start = ({ engine, limit }) => {
     setRunning(true);
     setLog([]);
     setDismissed(false);
@@ -104,40 +95,8 @@ export default function App() {
           </p>
         </div>
 
-        <div className="toolbar">
-          <span className="select">
-            <select
-              value={engine}
-              onChange={(e) => setEngine(e.target.value)}
-              disabled={running}
-              aria-label="Decision engine"
-            >
-              {ENGINES.map(([v, label]) => (
-                <option key={v} value={v}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </span>
-          <span className="select">
-            <select
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
-              disabled={running}
-              aria-label="Batch size"
-            >
-              {[100, 150, 300, 600].map((n) => (
-                <option key={n} value={n}>
-                  {n} failures
-                </option>
-              ))}
-            </select>
-          </span>
-          <button className="btn btn-primary" onClick={start} disabled={running}>
-            {running && <span className="spinner" />}
-            {running ? "Running…" : "Run evaluation"}
-          </button>
-        </div>
+        <RunControls running={running} onRun={start} />
+
       </header>
 
       {error && (

@@ -1504,3 +1504,25 @@ td .muted {
   font-family: var(--mono);
   color: var(--text-4);
 }
+
+.toolbar-note {
+  margin: var(--s2) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  line-height: 1.5;
+  max-width: 46ch;
+  text-align: right;
+}
+
+.toolbar-note code {
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  color: var(--text-2);
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.select select option:disabled {
+  color: var(--text-4);
+}
