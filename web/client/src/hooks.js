@@ -26,7 +26,14 @@ export function useCountUp(target, duration = 900) {
     const delta = target - origin;
 
     const tick = (now) => {
-      const t = Math.min(1, (now - start) / duration);
+      // Clamp BOTH ends. requestAnimationFrame hands back the timestamp of the
+      // frame it belongs to, and that can predate the performance.now() taken
+      // inside this effect during the very same frame -- so `now - start` goes
+      // negative, and with only an upper clamp so does the eased fraction.
+      // 1 - (1-t)^3 at t = -0.02 is about -0.06, which rendered the headline
+      // figures as small NEGATIVE amounts of money for a frame or two on mount.
+      // Caught on the Evidence tab reading "VALUE AT RISK -4,414".
+      const t = Math.min(1, Math.max(0, (now - start) / duration));
       const eased = 1 - Math.pow(1 - t, 3);
       setValue(origin + delta * eased);
       if (t < 1) frame.current = requestAnimationFrame(tick);
