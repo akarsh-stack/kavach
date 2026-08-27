@@ -57,12 +57,12 @@ before it reaches a customer or a card network. The name is the argument.
 
 ## 10 · GitHub repo URL, public
 
-`https://github.com/<you>/kavach`
+`https://github.com/akarsh-stack/kavach`
 
 **Before you paste this, check a fresh clone runs:**
 
 ```bash
-git clone <url> /tmp/check && cd /tmp/check
+git clone https://github.com/akarsh-stack/kavach.git /tmp/check && cd /tmp/check
 pip install -r requirements.txt
 python scripts/run_eval.py --engine ollama --limit 150 --no-ablation
 python -m pytest tests/ -q
