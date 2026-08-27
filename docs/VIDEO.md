@@ -114,11 +114,28 @@ POLICY    VETO  [R1_RISK_BLOCK]  ->  escalate
 > re-present a declined transaction at volume. That override is deliberate and
 > it's written down.
 
+**Then switch back to the console** and open **`pay_019348`** — a real deferral,
+with the amber `R8_QUIET_HOURS` badge and its reason on screen:
+
+```
+07:09 falls in the quiet window (21:00–09:00); deferred to 03 Aug 09:00.
+```
+
+> And it isn't only vetoes. Twenty-eight times in this batch the model proposed
+> a perfectly reasonable action at a completely unreasonable hour, and the
+> policy layer held it until nine in the morning. Nobody got a payment reminder
+> at three a.m.
+
 **Say plainly** (this is a credibility moment, do not skip it):
 
-> In this run the agent never actually proposed a blocked action, so the
-> guardrails never fired. They gained twelve rupees. I'll come back to why they
-> still matter.
+> Be clear about what happened here, though. In this run the agent never
+> proposed anything that had to be **vetoed**. Zero. Every intervention you see
+> is a deferral.
+>
+> And I ran the ablation — the same agent with the policy layer switched off. It
+> nets thirty-one rupees *more*, and commits one violation. So on this batch, my
+> guardrails cost money and prevented exactly one thing. I'll come back to why I
+> keep them.
 
 ---
 
@@ -220,7 +237,7 @@ Restored:                                   64 passed
 >
 > It recovered *more* gross than anyone. Forty-six thousand.
 >
-> Then it burned eighteen thousand in goodwill and forty-nine thousand in churn,
+> Then it burned nineteen thousand in goodwill and fifty-one thousand in churn,
 > committed six hundred and three policy violations, and never stopped.
 >
 > Net: **minus thirty-four thousand.** Measured properly, the obvious approach
@@ -264,8 +281,8 @@ Restored:                                   64 passed
 
 **Say:**
 
-> Eight bugs worth mentioning. All found by a number looking wrong, not by a
-> test.
+> Twelve bugs are written up here. Sixty-four tests caught none of them. Every
+> single one came from running the thing and reading the output.
 >
 > The worst: my cost model concluded that ignoring fraud was profitable —
 > because I'd priced what escalation costs without pricing what it avoids.
@@ -276,10 +293,18 @@ Restored:                                   64 passed
 > had abandoned a 3DS checkout. There's no stored credential and nobody at the
 > auth screen — which is the entire reason nudges exist.
 >
-> And one I shipped twice. I made quota exhaustion abort loudly instead of
-> silently degrading — then added a second fatal error that inherited from the
-> recoverable base class, so the policy layer swallowed it again. Both now sit
-> under one type.
+> The one that would have embarrassed me hardest: my README claimed you could
+> reproduce these numbers without an API key. That was false. Without
+> credentials it fell back to a stub and printed thirty-five nine against my
+> published thirty-nine four, with nothing on screen saying so. I found it by
+> cloning my own repo and reading the engine column.
+>
+> And the one closest to home — my guardrail was working and this dashboard
+> showed no sign of it. The code decided an intervention had happened by
+> checking whether the action changed, and a deferral only changes its *timing*.
+> So all twenty-eight quiet-hours holds you saw a minute ago rendered as
+> ordinary allows. The best compliance evidence in the project was in the data
+> and not on the screen.
 >
 > What I wouldn't ship: held-out reasons are three samples. Ambiguous cases,
 > ten — and there the agent ties the lookup table, so the contextual inference I
@@ -298,7 +323,9 @@ Restored:                                   64 passed
 - [ ] `naive_llm` net **−₹34,119** stated out loud
 - [ ] The exposure block called out — the agent's number not moving is the point
 - [ ] At least one concrete bug described with its *cause*
-- [ ] The guardrails-gained-₹12 admission included
+- [ ] **"Zero vetoes, twenty-eight deferrals"** said plainly — do not let the
+      guardrails sound more heroic than they were on this batch
+- [ ] A real deferral opened on screen (`pay_019348`, `R8_QUIET_HOURS`)
 - [ ] The n=3 / n=10 limitation stated
 - [ ] **No lift percentage quoted**
 - [ ] The live Razorpay payload shown (beat 4b)

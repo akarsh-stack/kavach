@@ -42,8 +42,8 @@ cost of trying**.
 
 **Recovery console** — the product. A work queue: what's at risk, what the agent
 diagnosed, what it's doing, what it recovered, what needs you. Expand a payment
-to see the bounded workflow it executed and any point the policy layer overruled
-the model.
+to see the bounded workflow it executed, and every action the policy layer
+allowed, **deferred** or vetoed along the way.
 
 **Evidence** — the five-policy comparison, cost breakdown, diagnosis accuracy and
 sensitivity sweep. *Why you should believe the console.*
@@ -70,7 +70,7 @@ committed decision cache:
 
 ```
 [llm] Ollama unavailable: model 'qwen2.5:7b' unavailable
-      replaying 1655 recorded decisions from gpt-oss:120b
+      replaying 1688 recorded decisions from gpt-oss:120b
 running agent      net Rs 40,849   (0 live calls, disk cache 100%)
 running naive_llm  net Rs -34,119  (0 live calls, disk cache 100%)
 ```
@@ -108,7 +108,7 @@ Three results matter more than that one.
 hackathon submission. **Same model as our agent.** It recovered ₹46,738 gross,
 *more than anyone else*.
 
-Then it destroyed **₹18,564 in goodwill and ₹49,500 in churn**, committed **603
+Then it destroyed **₹19,066 in goodwill and ₹51,300 in churn**, committed **603
 policy violations**, and hit the event cap on most of the batch because it never
 stops.
 
@@ -117,10 +117,23 @@ economics, the stopping rules and the guardrails — not the model.
 
 ### 2. The guardrails made an entire axis of risk inapplicable
 
-Not the argument we expected. On this batch the model never proposed a blocked
-action, so the policy layer never fired — it gained ₹12 and prevented nothing.
+Not the argument we expected, and the honest version is unflattering.
 
-But look at the compliance-exposure axis of the sensitivity sweep:
+Run the ablation — the same agent with the policy layer switched off:
+
+```
+agent                  40,849   0 violations
+agent_no_guardrails    40,880   1 violation
+```
+
+**The guardrails cost ₹31 and prevented exactly one violation on this batch.**
+They vetoed nothing at all; every intervention was one of 28 quiet-hours
+deferrals. Measured on this run alone, they lose money.
+
+Reproduce it with `python scripts/run_eval.py --engine replay --limit 150`
+(without `--no-ablation`) — the decisions are cached, so it costs nothing.
+
+So why keep them? Look at the compliance-exposure axis of the sensitivity sweep:
 
 ```
 compliance     x0.0     agent 40,849    fixed_retry 37,655
@@ -218,7 +231,7 @@ judgement.
 Every backend runs at `temperature 0`, so the model is a deterministic function
 of its inputs and [`agent/cache.py`](agent/cache.py) memoises decisions keyed on
 `(model, schema, system prompt, user message)`. **The cache is committed and
-replayed when no backend is reachable** — verified on a fresh clone: 1,655
+replayed when no backend is reachable** — verified on a fresh clone: 1,688
 decisions replayed, the published numbers exactly, 0 live calls.
 
 A replay *miss* is fatal, not silent. A partial replay would publish different
@@ -374,6 +387,42 @@ And one in the web layer: **`EventSource` auto-reconnects, and every reconnect
 re-issued a GET that spawned a Python process.** Restarting the server mid-stream
 silently launched a fresh evaluation that overwrote the results file. Any SSE
 endpoint with a side effect has this bug.
+
+**The guardrail was working and the console showed no sign of it.** A step
+rendered as an intervention only when the final action differed from the
+proposed one — but a deferral changes an action's *timing*, not its identity, so
+all 28 quiet-hours holds drew as ordinary allows. The agent vetoes nothing, so
+those deferrals were the only visible evidence the policy layer does anything,
+and the most demonstrable compliance behaviour in the run was sitting in the
+artifact unrendered. The console and the evidence tab were also quoting
+different headline numbers — ₹43,862 gross against ₹40,849 net — with no bridge
+between them, so anyone doing the arithmetic got a third figure.
+
+**The demo contradicted its own output.** Beat 6 printed `rules_engine wins
+24/36 … loses at 12` and then narrated "wins 27 and loses 9" two lines below it.
+Beat 5 said "Five policies" over a table with three rows, and ran `--no-llm`, so
+the demo of an AI agent did not contain the agent. Every figure was typed in
+when it was true and never revisited. Nothing in the repo could catch this; it
+surfaces only when someone reads a beat aloud, which is what recording means.
+All of them are now derived from the run that just printed.
+
+**A fix that changed nothing, because we guessed a status code.** The dashboard
+answered a slow API boot with "no results yet — generate one with
+`python scripts/run_eval.py --no-llm`": wrong cause, wrong remedy, and only F5
+cleared it. The retry we added triggered on HTTP 502. Vite reports a dead proxy
+target as a plain **500**, so the first version did nothing at all — found by
+pointing the proxy at a dead port and watching the old banner appear anyway.
+Status alone cannot separate "nothing is listening" from a real server fault;
+the body can, since every error this API raises is JSON carrying an `error` key.
+
+**Headline figures could render as negative money.** The count-up clamped its
+progress fraction at the top but not the bottom. `requestAnimationFrame` hands
+back the timestamp of the frame it belongs to, and that can predate a
+`performance.now()` taken inside the same frame — so the eased fraction went
+negative and *Value at risk* displayed **−₹4,414** for a frame or two before
+settling. Each wrong figure was exactly −2.15% of its target, which is what gave
+the easing away. It survived this long because everything that had ever checked
+it looked *after* the animation finished.
 
 ---
 

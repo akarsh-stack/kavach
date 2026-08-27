@@ -135,7 +135,7 @@ class RazorpayLive:
                 "amount": amount_paise,
                 "currency": "INR",
                 "receipt": receipt,
-                "notes": {"source": "bounded-revenue-recovery"},
+                "notes": {"source": "kavach"},
             },
         )
 

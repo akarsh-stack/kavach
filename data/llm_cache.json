@@ -550,6 +550,17 @@
 "recovery_class": "retry_later_funds"
 }
 },
+"078759b3ad1f25917b727cd62991df54": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.93,
+"delay_hours": 0.0,
+"rationale": "payment_timed_out maps to nudge_customer; we have only sent one message and can send a second WhatsApp nudge now to prompt the user.",
+"recovery_class": "nudge_customer"
+}
+},
 "07941f527200c7c56c5baa0daf6cab9d": {
 "model": "gpt-oss:120b",
 "value": {
@@ -834,6 +845,17 @@
 "delay_hours": 24.0,
 "rationale": "Customer cancelled the UPI payment, indicating they chose not to proceed now. After several attempts, a gentle, low\u2011frequency nudge via email after a day may remind them without being intrusive.",
 "recovery_class": "nudge_customer"
+}
+},
+"0baf2dfeed5d5f5a28d091504114be6e": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "Insufficient funds maps to retry_later_funds but the payment already had 3 recovery attempts (max allowed) and 2 messages, so no further retry or messaging is permissible.",
+"recovery_class": "retry_later_funds"
 }
 },
 "0be1e13f06e6522f550348b4140afd6b": {
@@ -2772,6 +2794,17 @@
 "recovery_class": "switch_rail"
 }
 },
+"23fe57f2009ddaba1aecc7a4e0a92b5f": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.97,
+"delay_hours": 0.0,
+"rationale": "payment_session_expired requires a fresh payment link, but the payment already hit the 2\u2011message limit, so no further nudge or retry is allowed.",
+"recovery_class": "nudge_customer"
+}
+},
 "24134aa222bd9d702899b6fd684c4e3c": {
 "model": "gpt-oss:120b",
 "value": {
@@ -2857,6 +2890,17 @@
 "confidence": 0.73,
 "delay_hours": 1.0,
 "rationale": "Payment timed out after multiple UPI attempts; 5 retries and 5 messages already sent. Switching to an alternative payment method (e.g., card) offers the best chance to recover the Rs\u202f2,178.95 without further spamming the user.",
+"recovery_class": "switch_rail"
+}
+},
+"24fd45b6c32ea85d3610b4b06147c316": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.97,
+"delay_hours": 0.0,
+"rationale": "vpa_resolution_failed maps to switch_rail (dead instrument). Payment already has 3 attempts and 3 messages, hitting the per\u2011payment limit, so no further retry or switch is allowed.",
 "recovery_class": "switch_rail"
 }
 },
@@ -3187,6 +3231,17 @@
 "confidence": 0.78,
 "delay_hours": 24.0,
 "rationale": "Insufficient funds is a temporary issue. After 22h with no change and four prior nudges, avoid further messaging and schedule an automatic retry in 24h, giving the customer time to add funds.",
+"recovery_class": "retry_later_funds"
+}
+},
+"2acde645ad35fa33fa749cf662b81790": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.92,
+"delay_hours": 0.0,
+"rationale": "Insufficient funds requires the customer to add money; a fresh payment link nudges them to try after replenishing balance, within allowed message limits.",
 "recovery_class": "retry_later_funds"
 }
 },
@@ -3564,6 +3619,17 @@
 "recovery_class": "retry_later_funds"
 }
 },
+"306e08469e0cf0ec666420cf6ef05693": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.92,
+"delay_hours": 0.02,
+"rationale": "payment_cancelled maps to nudge_customer; user canceled intentionally, so a fresh payment link nudges them. Within messaging limits; delay until after 09:00.",
+"recovery_class": "nudge_customer"
+}
+},
 "308a6ff9701148af65184f1ac07ca554": {
 "model": "gpt-oss:120b",
 "value": {
@@ -3784,6 +3850,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"337416da1d82d3a27704d7b6983aa6b7": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "Docs map authentication_failed to nudge_customer; prompting the user now via WhatsApp can resolve the OTP/3\u2011DS issue without exceeding message limits.",
+"recovery_class": "nudge_customer"
+}
+},
 "33bb8dbdac55216d07241a0411cea17e": {
 "model": "gpt-oss:120b",
 "value": {
@@ -3825,6 +3902,17 @@
 "confidence": 0.95,
 "delay_hours": 0.0,
 "rationale": "payment_timed_out maps to nudge_customer; we can send a second WhatsApp reminder now within message limits.",
+"recovery_class": "nudge_customer"
+}
+},
+"349c6eed64ffbbc6e191fa03bd1ea411": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.99,
+"delay_hours": 0.0,
+"rationale": "payment_session_expired maps to nudge_customer, but both the per\u2011payment message limit (2) and overall weekly limit are already met, and a silent retry isn't possible for UPI, so no further recovery action is feasible.",
 "recovery_class": "nudge_customer"
 }
 },
@@ -3971,6 +4059,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"3637279967ec90b8db1e605b26d9c9d1": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.9,
+"delay_hours": 0.0,
+"rationale": "Authentication_failed maps to nudge_customer, but the payment already hit the 2\u2011message limit; further nudging is prohibited, and a silent retry would likely repeat the same user\u2011action failure, so we give up.",
+"recovery_class": "nudge_customer"
+}
+},
 "365a29f5c510b145910c5fd1785d133a": {
 "model": "gpt-oss:120b",
 "value": {
@@ -4059,6 +4158,17 @@
 "recovery_class": "retry_later_funds"
 }
 },
+"3767075fa3ad6e251060cecd714dae95": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "whatsapp",
+"confidence": 0.99,
+"delay_hours": 0.0,
+"rationale": "Razorpay maps 'payment_declined' to switch_rail, indicating the UPI instrument is dead; ask customer to use another payment method via a WhatsApp prompt.",
+"recovery_class": "switch_rail"
+}
+},
 "37a949f2844a9307eb0cf61e26d749dd": {
 "model": "gpt-oss:120b",
 "value": {
@@ -4089,6 +4199,17 @@
 "confidence": 0.86,
 "delay_hours": 0.0,
 "rationale": "The failure is due to the customer's daily UPI transaction limit being exceeded. They can retry after the limit resets (next day) or increase the limit. Nudge them now with a friendly reminder to try again later.",
+"recovery_class": "nudge_customer"
+}
+},
+"37eff7dbf3c1cfde9354c6fc41a52d23": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.94,
+"delay_hours": 3.8,
+"rationale": "Docs map authentication_failed to nudge_customer; we have remaining attempts and messaging quota, but must avoid sending between 21:00-09:00, so delay until 09:00.",
 "recovery_class": "nudge_customer"
 }
 },
@@ -4123,6 +4244,17 @@
 "delay_hours": 2.0,
 "rationale": "Gateway error likely transient; two attempts failed quickly. A third retry after a short pause may succeed without bothering the customer.",
 "recovery_class": "retry_same"
+}
+},
+"3834782687d1e2d5f0744d564880afd0": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": null,
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "vpa_resolution_failed maps to switch_rail; the VPA cannot be resolved, so retrying the same UPI will fail. Customer must choose another payment method, and we have already hit the 2\u2011message limit, so we prompt silently without sending another message.",
+"recovery_class": "switch_rail"
 }
 },
 "384ab3817a64c174c4a31ecb6b7a20f3": {
@@ -4587,6 +4719,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"3fc0c3d6320b72e5ab4198d9ba0ef646": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.92,
+"delay_hours": 0.0,
+"rationale": "payment_timed_out maps to nudge_customer, but messaging limits (2 messages per payment) are already reached, and a silent retry would likely waste resources; thus we give up.",
+"recovery_class": "nudge_customer"
+}
+},
 "403960cec91e11a0dd3847c93c25f7e1": {
 "model": "gpt-oss:120b",
 "value": {
@@ -4895,6 +5038,17 @@
 "recovery_class": "switch_rail"
 }
 },
+"455658caf15c479550dbb0665acc2adf": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Payment_declined maps to switch_rail, but the customer has already received the maximum two messages and cannot be prompted again; no silent retry is appropriate, so we must give up.",
+"recovery_class": "switch_rail"
+}
+},
 "45a694318d1946e8e8b744a35512c4b2": {
 "model": "gpt-oss:120b",
 "value": {
@@ -5090,6 +5244,17 @@
 "confidence": 0.95,
 "delay_hours": 10.5,
 "rationale": "Reason maps to nudge_customer; customer cancelled, so prompt with fresh link after quiet hours to respect messaging window.",
+"recovery_class": "nudge_customer"
+}
+},
+"4809b041d7b12793ab08341f484ef2cb": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "authentication_failed maps to nudge_customer, but the payment already has 2 messages (limit) and 2 attempts; without another prompt a retry is unlikely to succeed.",
 "recovery_class": "nudge_customer"
 }
 },
@@ -5432,6 +5597,17 @@
 "delay_hours": 0.5,
 "rationale": "Payment timed out indicates the user didn't finish the UPI flow. After 3 prior attempts and messages, a gentle reminder via WhatsApp can prompt them to retry now. No evidence of gateway issues, so nudging is appropriate.",
 "recovery_class": "nudge_customer"
+}
+},
+"4e7a4ba4ca1dbb6861ab03996e96cd6c": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "whatsapp",
+"confidence": 0.92,
+"delay_hours": 1.9,
+"rationale": "Issuer blocked credit transactions; retrying or nudging same card will fail, so ask the customer to use an alternative payment method after the no\u2011messaging window.",
+"recovery_class": "switch_rail"
 }
 },
 "4ea1559f11f6c620ab74dfa094af5d24": {
@@ -5797,6 +5973,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"52d81241840d5e6678e0a9b5b0d095db": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.95,
+"delay_hours": 0.1,
+"rationale": "Payment session expired; user likely dropped out. Send a fresh UPI link via WhatsApp after 09:00, within the 2-message limit.",
+"recovery_class": "nudge_customer"
+}
+},
 "52ee56c2cd59b000d0571400cfd5a7cf": {
 "model": "gpt-oss:120b",
 "value": {
@@ -6127,6 +6314,17 @@
 "recovery_class": "retry_later_funds"
 }
 },
+"567f043a39a25cd87283000881862528": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "payment_session_expired maps to nudge_customer; session timed out 8.5h ago, no outage signals, within message limits, send fresh UPI link via WhatsApp now.",
+"recovery_class": "nudge_customer"
+}
+},
 "568e13014e20045c7aa6977ba0793cee": {
 "model": "gpt-oss:120b",
 "value": {
@@ -6135,6 +6333,17 @@
 "confidence": 0.78,
 "delay_hours": 1.0,
 "rationale": "Customer cancelled the payment, indicating possible hesitation. A gentle nudge after a short delay can prompt them to retry without being intrusive, maximizing chance of recovery.",
+"recovery_class": "nudge_customer"
+}
+},
+"5708da0212dcc36422d1b689acef0062": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.96,
+"delay_hours": 2.5,
+"rationale": "authentication_failed maps to nudge_customer; we can send a second message (limit 2) using WhatsApp for higher success, delayed until after 09:00 to respect messaging window.",
 "recovery_class": "nudge_customer"
 }
 },
@@ -6257,6 +6466,17 @@
 "delay_hours": 0.0,
 "rationale": "Card is blocked (debit_instrument_blocked); retrying same instrument will fail. Prompt customer to use a different card or payment method (e.g., UPI/netbanking) to recover the Rs\u202f3,477.53.",
 "recovery_class": "nudge_customer"
+}
+},
+"58bdc1fd98ba8a94cf40eba2dc43caea": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "whatsapp",
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "vpa_resolution_failed maps to switch_rail; the VPA validation failed, so retrying same UPI will not work. Prompt the user to use another payment method now.",
+"recovery_class": "switch_rail"
 }
 },
 "58e0d6d15d258377add4d8ef0b79da44": {
@@ -13409,6 +13629,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"b8448cd4b7bdffc4e25456f9a933a580": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.9,
+"delay_hours": 0.0,
+"rationale": "Bank indicates credit transactions are not allowed for this customer, making the card instrument unusable; further attempts would waste retries and messages, and message limits are already reached.",
+"recovery_class": "switch_rail"
+}
+},
 "b86beb8c8b3dba7ae39faba54b361782": {
 "model": "gpt-oss:120b",
 "value": {
@@ -14034,6 +14265,17 @@
 "delay_hours": 0.5,
 "rationale": "Bank technical error is usually transient. No prior fails and no downtime signals. A short retry (\u224830\u202fmin) on the same UPI channel likely succeeds without bothering the customer.",
 "recovery_class": "retry_same"
+}
+},
+"c1860cc52ee8e365471cbabb53ed39a3": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "payment_timed_out maps to nudge_customer, but the payment already has 2 messages sent (max) and 2 attempts; further nudge would violate limits and retry would likely fail, so we stop.",
+"recovery_class": "nudge_customer"
 }
 },
 "c18a19f1df3ceacb1c6477fdb8f02c5f": {
@@ -14949,6 +15191,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"ccd717804fa03bfd1f4e62920fa9342f": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.95,
+"delay_hours": 0.05,
+"rationale": "payment_timed_out maps to nudge_customer; the customer likely dropped out, we have one message remaining, so send a fresh payment link via WhatsApp as soon as the allowed window opens.",
+"recovery_class": "nudge_customer"
+}
+},
 "ccf1dfef6d0ddbf94b4374fc95edea0d": {
 "model": "gpt-oss:120b",
 "value": {
@@ -14980,6 +15233,17 @@
 "delay_hours": 0.0,
 "rationale": "Payment failed due to insufficient funds on a standing mandate. After 4 retries and 2 nudges, the next best step is to prompt the customer to add funds, then retry later. Immediate WhatsApp nudge maximizes chance of quick resolution.",
 "recovery_class": "retry_later_funds"
+}
+},
+"cd117df585256b9913341263479416ac": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.96,
+"delay_hours": 0.0,
+"rationale": "Authentication_failed maps to nudge_customer, but the payment already has 2 messages (max 2) and 2 attempts (max 3). A further nudge would violate messaging limits, and a silent retry is unlikely to succeed without user action, so we give up.",
+"recovery_class": "nudge_customer"
 }
 },
 "cd210dd7413e6b2598e98aba078fc352": {

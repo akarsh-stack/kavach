@@ -1,4 +1,4 @@
-# Where this is, and what to do next
+# Kavach — where this is, and what to do next
 
 Written to be picked up cold.
 
@@ -7,14 +7,17 @@ Written to be picked up cold.
 ```bash
 pip install -r requirements.txt
 python scripts/run_eval.py --engine ollama --limit 150 --no-ablation   # 0 live calls, all replayed
+python scripts/run_eval.py --engine replay --limit 150                 # + the guardrail ablation
 python scripts/live_probe.py --replay                                  # real Razorpay payload
 python -m pytest tests/ -q                                             # 64 tests
 cd web && npm run install:all && npm run dev                           # :5173
 ```
 
 **No API key needed for any of it.** When no backend is reachable the client
-*replays* the committed decision cache. Verified on a fresh clone: 1,655
-decisions replayed, agent ₹40,849, 0 live calls.
+*replays* the committed decision cache — 1,688 recorded decisions from
+`gpt-oss:120b`, temperature 0. Verified on a fresh clone with no `.env`:
+0 live calls, agent ₹40,849, and the 36-point sensitivity sweep regenerates
+byte-identical apart from its timestamp.
 
 This was broken until late. Without credentials the client fell back to the
 stub, whose model name cannot match the recorded entries, so it silently
@@ -59,6 +62,12 @@ Two results matter more than the headline:
   (₹40,849 at ×0, ×1 and ×5) because it commits zero violations. Every other
   policy swings with the price of a breach. That is what the guardrails bought.
 
+**Say the unflattering half too.** The ablation — same agent, policy layer off —
+nets ₹40,880 with 1 violation. So on this batch the guardrails **cost ₹31 and
+prevented exactly one thing**, and vetoed nothing at all; all 28 interventions
+were quiet-hours deferrals. The argument for them is the exposure axis above and
+`naive_llm`, not this run's P&L. Do not let anyone hear it the other way round.
+
 ## Live Razorpay proof
 
 `python scripts/live_probe.py --replay`
@@ -102,7 +111,7 @@ degrading every decision to `stop`.
 
 **Blocking:**
 
-- [ ] **Push to a public GitHub repo.** Form item 10 asks for the URL. 36
+- [ ] **Push to a public GitHub repo.** Form item 10 asks for the URL. 48
       commits, currently local only — no remote configured.
 - [ ] **Record the video.** Script and harness ready — `docs/VIDEO.md`,
       `python scripts/demo.py`. No beat needs a model or a key:
@@ -142,3 +151,26 @@ degrading every decision to `stop`.
   multi-line strings this way. Use the editor for anything containing escapes.
 - **`tests/test_imports.py` exists** because a dataclass field-ordering bug
   survived a full test run — nothing imported `agent/audit.py`. Keep it.
+- **`make clean` used to delete the published evidence.** `rm -rf
+  data/runs/*.json` takes out `reference.json` and `sensitivity.json`, both of
+  which are committed and both of which the dashboard reads by default. Only
+  `latest.json`, `demo.json` and `sensitivity_baselines.json` are scratch.
+- **`run_sensitivity.py` picks its save name from `--engine`.** The
+  credential-free sweep does not contain the agent at all, so letting it write
+  to `sensitivity.json` replaced the headline 33/36 grid with a baselines-only
+  one. `make sens`, and therefore `make all`, used to do exactly that.
+- **Vite reports a dead API proxy as HTTP 500, not 502.** Any "is the backend
+  up?" check keyed on 502 silently never fires. Distinguish by body shape: every
+  error this API raises is JSON with an `error` key; a proxy failure is not.
+- **`requestAnimationFrame` timestamps can predate a `performance.now()` taken
+  in the same frame.** Clamp animation progress at *both* ends — an upper-only
+  clamp let eased values go negative and rendered negative rupees for a frame.
+- **A `.metric` is the only child of its own wrapper**, so `:first-child`
+  matches every one of them. Style the grid children, not the cells.
+- **Stale HMR errors survive a reload.** Vite can leave `Failed to reload` and
+  `X is not defined` in the console after an edit sequence, long after the code
+  is correct and the production build is clean. Open a **fresh tab** — it gets
+  its own console buffer — before believing any of it.
+- **Numbers typed into narration go stale silently.** `scripts/demo.py` printed
+  one result and then read out a different one. Derive every figure in the demo
+  from the run that just printed; nothing in CI can catch a stale sentence.

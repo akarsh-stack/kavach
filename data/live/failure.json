@@ -35,7 +35,8 @@
   "invoice_id": null,
   "method": "card",
   "notes": {
-    "source": "bounded-revenue-recovery"
+    "source": "bounded-revenue-recovery",
+    "_note_on_this_field": "The working title at capture time. The project was named Kavach afterwards; this payload is left exactly as Razorpay returned it."
   },
   "order_id": "order_TUONlb9wkqLIl0",
   "refund_status": null,
