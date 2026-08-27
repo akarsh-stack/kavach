@@ -239,7 +239,7 @@ REAL RAZORPAY FAILURE  (test mode)
   mapped by the agent rulebook: hard_stop
 
 THE AGENT, ON A REAL PAYLOAD
-  diagnosis    hard_stop  (confidence 1.00)
+  diagnosis    hard_stop  (confidence 0.98)
   rationale    "international transactions are disallowed, a compliance
                 block, so no retry or customer contact."
   POLICY       ALLOW -> escalate

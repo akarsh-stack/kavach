@@ -69,7 +69,7 @@ error_reason  international_transaction_not_allowed
 error_source  business
 
 in our transcribed taxonomy : YES
-agent diagnosis             : hard_stop, confidence 1.00
+agent diagnosis             : hard_stop, confidence 0.98
 policy ruling               : ALLOW -> escalate
 ```
 
