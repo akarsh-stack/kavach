@@ -2,14 +2,17 @@
    Design system
    ===========================================================================
 
-   Series colours are validated, not chosen by eye. Against this surface
-   (#14151C), with slot order blue -> teal -> violet -> pink -> amber -> cyan:
+   Series colours are validated, not chosen by eye. With slot order
+   blue -> teal -> violet -> pink -> amber -> cyan:
 
      lightness band .. PASS  all 6 inside L 0.48-0.67
      chroma floor .... PASS
      CVD separation .. PASS  worst adjacent dE 13.1  (target >= 8)
      normal vision ... PASS  worst adjacent dE 19.3  (floor 15)
      contrast ........ PASS  all 6 >= 3:1 on surface
+
+   Re-measured after the surface moved from #14151C to #131315: every slot
+   improved slightly against the darker ground, worst is violet at 4.25:1.
 
    The ORDER is the colour-blind safety mechanism, not decoration: 720
    orderings were enumerated and only the 124 clearing every gate kept. This
@@ -21,24 +24,49 @@
    ========================================================================= */
 
 :root {
-  /* -- surfaces: deep near-black with a blue undertone ------------------- */
-  --bg: #0a0b0f;
-  --bg-elevated: #0e0f14;
-  --surface-1: #14151c;
-  --surface-2: #1c1e27;
-  --surface-3: #24262f;
-  --surface-hover: #1f212b;
+  /* -- surfaces ----------------------------------------------------------
+     Neutral, very slightly warm. The previous palette was blue-black with
+     radial blue and violet washes bleeding down the page -- the single most
+     recognisable signature of a generated dashboard. Depth here comes from
+     value steps and hairlines, never from glow.                          */
+  --bg: #0b0b0c;
+  --bg-elevated: #0f0f11;
+  --surface-1: #131315;
+  --surface-2: #1a1a1d;
+  --surface-3: #232326;
+  --surface-hover: #19191c;
 
-  /* -- borders ----------------------------------------------------------- */
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --border-focus: rgba(82, 115, 232, 0.55);
+  /* -- borders ------------------------------------------------------------
+     Carrying the structure that shadows used to, so they run stronger.   */
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-focus: rgba(214, 160, 74, 0.65);
 
-  /* -- ink --------------------------------------------------------------- */
-  --text-1: #f2f3f7;
-  --text-2: #a2a6b8;
-  --text-3: #6b7085;
-  --text-4: #4a4e60;
+  /* -- chrome accent ------------------------------------------------------
+     Not one of the chart series: interface furniture must not be mistaken for
+     data. Warm brass against a mostly cool categorical palette, and the
+     colour of a ledger rule rather than a product tour.
+
+     Caveat worth knowing: it is adjacent in hue to --series-5 amber
+     (#c68325), which appears as the "Goodwill & churn" band in the cost
+     stack. They are never rendered as two swatches side by side -- chrome is
+     a filled control, a 2px underline or a focus ring, never a data mark --
+     but if a future chart puts them next to each other, move this, not the
+     series, since the series order is the colour-blind safety mechanism.   */
+  --accent-chrome: #d6a04a;
+  --accent-chrome-dim: rgba(214, 160, 74, 0.12);
+
+  /* -- ink ----------------------------------------------------------------
+     Every step clears 4.5:1 on the page AND on surface-2, measured, because
+     all four are used for real text somewhere. The previous bottom two were
+     3.8:1 and 2.1:1 -- the payment method and issuer on each queue row were
+     effectively unreadable. Hierarchy below text-2 is carried by size,
+     weight and tracking rather than by fading toward the background.
+       f4f3f1 17.7   b4b2ac 9.3   999791 6.7   84827d 5.1                  */
+  --text-1: #f4f3f1;
+  --text-2: #b4b2ac;
+  --text-3: #999791;
+  --text-4: #84827d;
 
   /* -- validated categorical series -------------------------------------- */
   --series-1: #5273e8;
@@ -58,19 +86,28 @@
   --info: #5273e8;
   --info-dim: rgba(82, 115, 232, 0.14);
 
-  /* -- elevation --------------------------------------------------------- */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 0 1px rgba(82, 115, 232, 0.25), 0 8px 28px rgba(82, 115, 232, 0.18);
+  /* -- elevation ----------------------------------------------------------
+     Almost none. Panels sit ON the page, they do not float above it. Only
+     genuinely overlapping surfaces -- tooltips, popovers -- get a shadow. */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
 
-  /* -- type -------------------------------------------------------------- */
-  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  /* -- type ---------------------------------------------------------------
+     Serif mastheads, sans prose, mono for every figure. Numbers are always
+     mono and always tabular so columns align and digits never reflow.    */
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
 
-  --fs-display: 34px;
-  --fs-h1: 20px;
-  --fs-h2: 14px;
+  /* Fraunces' softness and its one wonky axis, applied wherever the display
+     face appears so the whole display voice is consistent. */
+  --serif-vars: "SOFT" 28, "WONK" 1;
+
+  --fs-hero: 46px;
+  --fs-display: 30px;
+  --fs-h1: 26px;
+  --fs-h2: 13px;
   --fs-body: 13.5px;
   --fs-sm: 12.5px;
   --fs-xs: 11px;
@@ -86,10 +123,12 @@
   --s7: 48px;
   --s8: 64px;
 
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  /* Instruments have tight corners. 14px pill-cards on everything is the
+     other half of the generated-dashboard look. */
+  --radius-sm: 2px;
+  --radius: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
@@ -106,22 +145,29 @@ html {
 
 body {
   margin: 0;
+  /* Flat. The blue and violet radial washes that used to sit behind the
+     masthead were the loudest tell in the whole stylesheet. A control
+     surface has no light source. */
   background: var(--bg);
-  /* A very soft radial lift behind the masthead so the page has a light
-     source rather than reading as a flat sheet. */
-  background-image:
-    radial-gradient(900px 420px at 12% -8%, rgba(82, 115, 232, 0.09), transparent 62%),
-    radial-gradient(760px 380px at 92% -4%, rgba(130, 99, 224, 0.07), transparent 60%);
-  background-attachment: fixed;
   color: var(--text-1);
   font-family: var(--sans);
   font-size: var(--fs-body);
   line-height: 1.55;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Every figure in this interface is tabular mono, everywhere, without each
+   component having to remember. Columns line up and digits stop reflowing
+   mid-animation. */
+.mono,
+code,
+kbd,
+samp {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {
-  background: rgba(82, 115, 232, 0.32);
+  background: rgba(214, 160, 74, 0.28);
 }
 
 /* -- scrollbars ---------------------------------------------------------- */
@@ -142,13 +188,13 @@ body {
 
 *::-webkit-scrollbar-thumb {
   background: var(--surface-3);
-  border-radius: 999px;
-  border: 2px solid transparent;
+  border-radius: 0;
+  border: 3px solid transparent;
   background-clip: content-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: #34374a;
+  background: #3a3a3e;
   background-clip: content-box;
 }
 
@@ -164,10 +210,13 @@ body {
    Motion
    ========================================================================= */
 
+/* Barely there. A 10px lift over half a second on every block reads as a
+   template introducing itself; 4px over 260ms just takes the hard edge off
+   the first paint. */
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -201,17 +250,24 @@ body {
 }
 
 .rise {
-  animation: rise 0.5s var(--ease) both;
+  animation: rise 0.26s var(--ease-out) both;
 }
 
-/* Staggered entrance, so sections arrive in reading order rather than
-   all at once. */
-.rise-1 { animation-delay: 0.04s; }
-.rise-2 { animation-delay: 0.10s; }
-.rise-3 { animation-delay: 0.16s; }
-.rise-4 { animation-delay: 0.22s; }
-.rise-5 { animation-delay: 0.28s; }
-.rise-6 { animation-delay: 0.34s; }
+/* Crossfade when the tab content is replaced. Content swapping inside the
+   same container is the one case where a plain fade is the correct move --
+   there is no spatial relationship between the two panels to preserve. */
+.tab-panel {
+  animation: fade 0.2s var(--ease-out) both;
+}
+
+/* Staggered entrance, so sections arrive in reading order rather than all at
+   once. Tight steps: the whole page has settled inside 200ms. */
+.rise-1 { animation-delay: 0.02s; }
+.rise-2 { animation-delay: 0.05s; }
+.rise-3 { animation-delay: 0.08s; }
+.rise-4 { animation-delay: 0.11s; }
+.rise-5 { animation-delay: 0.14s; }
+.rise-6 { animation-delay: 0.17s; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -264,6 +320,9 @@ body {
    Masthead + toolbar
    ========================================================================= */
 
+/* A masthead in the printed sense: a running head above a heavy rule, the
+   title in serif below it. The rule is the strongest line on the page and
+   everything else hangs off it. */
 .masthead {
   display: flex;
   align-items: flex-end;
@@ -271,55 +330,57 @@ body {
   gap: var(--s5);
   flex-wrap: wrap;
   padding-bottom: var(--s5);
-  margin-bottom: var(--s5);
-  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--s6);
+  border-bottom: 1px solid var(--border-strong);
 }
 
 .masthead h1 {
   margin: 0;
+  font-family: var(--serif);
+  font-variation-settings: var(--serif-vars);
+  font-optical-sizing: auto;
   font-size: var(--fs-h1);
   font-weight: 600;
-  letter-spacing: -0.022em;
-  line-height: 1.25;
+  letter-spacing: -0.015em;
+  line-height: 1.14;
 }
 
 .masthead .eyebrow {
   display: inline-flex;
   align-items: center;
   gap: var(--s2);
+  font-family: var(--mono);
   font-size: var(--fs-micro);
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--text-3);
-  margin-bottom: var(--s2);
+  margin-bottom: var(--s3);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--border);
 }
 
 .masthead .eyebrow .dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--success);
-  box-shadow: 0 0 0 3px rgba(47, 191, 113, 0.16);
 }
 
 .masthead .sub {
-  margin: var(--s2) 0 0;
+  margin: var(--s3) 0 0;
   color: var(--text-3);
   font-size: var(--fs-sm);
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
 }
 
+/* No tray. The controls sit directly on the page and are separated from the
+   masthead by alignment alone. */
 .toolbar {
   display: inline-flex;
   align-items: center;
   gap: var(--s2);
-  padding: var(--s1);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
 }
 
 /* ===========================================================================
@@ -333,21 +394,24 @@ body {
 
 .select select {
   appearance: none;
-  height: 34px;
+  height: 32px;
   padding: 0 30px 0 var(--s3);
-  background: transparent;
+  background: var(--surface-1);
   color: var(--text-1);
-  border: 1px solid transparent;
+  /* Carries its own outline now that the toolbar tray is gone. */
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-family: var(--sans);
-  font-size: var(--fs-sm);
-  font-weight: 450;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.02em;
   cursor: pointer;
   transition: background 0.16s var(--ease-out), border-color 0.16s var(--ease-out);
 }
 
 .select select:hover:not(:disabled) {
   background: var(--surface-2);
+  border-color: var(--border-strong);
 }
 
 .select select:disabled {
@@ -374,25 +438,27 @@ body {
 }
 
 .btn {
-  height: 34px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   gap: var(--s2);
   padding: 0 var(--s4);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--surface-2);
+  background: var(--surface-1);
   color: var(--text-1);
-  font-family: var(--sans);
-  font-size: var(--fs-sm);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
   font-weight: 500;
+  letter-spacing: 0.04em;
   cursor: pointer;
   white-space: nowrap;
+  /* No translate on press: moving a control shifts what is under the cursor
+     and reads as jitter next to a hairline grid. Colour carries the state. */
   transition:
-    transform 0.12s var(--ease-out),
     background 0.16s var(--ease-out),
     border-color 0.16s var(--ease-out),
-    box-shadow 0.16s var(--ease-out);
+    color 0.16s var(--ease-out);
 }
 
 .btn:hover:not(:disabled) {
@@ -400,100 +466,105 @@ body {
   border-color: var(--border-strong);
 }
 
-.btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
+/* The one primary action on the page. Solid brass, no gradient, no glow --
+   it is the only saturated fill in the entire interface, which is what makes
+   it findable without any of the usual decoration. */
 .btn-primary {
-  background: linear-gradient(180deg, #6382f0 0%, #4363d8 100%);
-  border-color: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  font-weight: 550;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.14) inset,
-    0 4px 14px rgba(67, 99, 216, 0.32);
+  background: var(--accent-chrome);
+  border-color: var(--accent-chrome);
+  color: #16130c;
+  font-weight: 600;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #7089f2 0%, #4e6ce0 100%);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.18) inset,
-    0 6px 20px rgba(67, 99, 216, 0.44);
+  background: #e3af5c;
+  border-color: #e3af5c;
+  color: #16130c;
 }
 
 .spinner {
-  width: 13px;
-  height: 13px;
-  border: 1.8px solid rgba(255, 255, 255, 0.28);
-  border-top-color: #fff;
+  width: 12px;
+  height: 12px;
+  border: 1.6px solid rgba(0, 0, 0, 0.28);
+  border-top-color: #16130c;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex: none;
 }
 
-/* pill-style toggle */
+/* Segmented control, squared off. Pills read as consumer chrome; this is a
+   filter bank on an instrument. */
 .pill-toggle {
   display: inline-flex;
-  padding: 3px;
-  gap: 2px;
-  background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .pill-toggle button {
   height: 26px;
   padding: 0 var(--s3);
   border: none;
+  border-right: 1px solid var(--border);
   background: transparent;
   color: var(--text-3);
-  border-radius: 999px;
-  font-family: var(--sans);
-  font-size: var(--fs-xs);
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
   font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: color 0.16s var(--ease-out), background 0.16s var(--ease-out);
 }
 
+.pill-toggle button:last-child {
+  border-right: 0;
+}
+
 .pill-toggle button:hover {
   color: var(--text-2);
+  background: var(--surface-2);
 }
 
 .pill-toggle button[data-active="true"] {
   background: var(--surface-3);
   color: var(--text-1);
-  box-shadow: var(--shadow-sm);
 }
 
 /* ===========================================================================
    Cards
    ========================================================================= */
 
+/* A panel, not a floating card: flat fill, hairline rule, tight corner. The
+   heading sits ON the rule that opens the panel, the way a ruled ledger
+   column is titled, so sections read as divisions of one sheet rather than
+   as a scatter of tiles. */
 .card {
   position: relative;
-  background: linear-gradient(180deg, var(--surface-1) 0%, #121319 100%);
+  background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--s5);
-  box-shadow: var(--shadow-md);
 }
 
 .card-head {
   margin-bottom: var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--border);
 }
 
 .card h2 {
   margin: 0;
   font-size: var(--fs-h2);
   font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--text-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
 }
 
 .card .note {
@@ -513,11 +584,18 @@ body {
    Metric cards
    ========================================================================= */
 
+/* One figure leads and the rest support it. A four-up row of identically
+   weighted tiles gives every number the same importance, which is another
+   way of giving none of them any -- and it is the stock generated-dashboard
+   layout. Here the lead column is wide and set large; the other three share
+   a track and are read as its context. */
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--s4);
-  margin-bottom: var(--s5);
+  gap: 0;
+  margin-bottom: var(--s6);
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border);
 }
 
 @media (max-width: 1060px) {
@@ -532,102 +610,120 @@ body {
   }
 }
 
+/* Cells of one ruled band, divided by hairlines -- no fill, no radius, no
+   shadow, nothing to lift off the page.
+
+   These rules target the GRID CHILDREN, not `.metric`. Each `.metric` is the
+   only child of a `.rise` wrapper, so `.metric:first-child` and
+   `:last-child` matched every one of them -- which silently set all four
+   values to hero size and removed every divider. */
+.metrics > * {
+  padding: var(--s4) var(--s5) var(--s4) 0;
+  border-right: 1px solid var(--border);
+}
+
+.metrics > *:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 1060px) {
+  .metrics > *:nth-child(2n) {
+    border-right: 0;
+    padding-right: 0;
+  }
+  .metrics > *:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 560px) {
+  .metrics > * {
+    border-right: 0;
+    padding-right: 0;
+  }
+  .metrics > * + * {
+    border-top: 1px solid var(--border);
+  }
+}
+
 .metric {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(180deg, var(--surface-1) 0%, #121319 100%);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--s4) var(--s4) var(--s4);
-  box-shadow: var(--shadow-md);
-  transition:
-    transform 0.22s var(--ease),
-    border-color 0.22s var(--ease),
-    box-shadow 0.22s var(--ease);
 }
 
-.metric:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-lg);
-}
-
-/* Semantic glow rail along the top edge. */
-.metric::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--accent, var(--series-1)),
-    transparent
-  );
-  opacity: 0.7;
-}
-
-.metric::after {
-  content: "";
-  position: absolute;
-  top: -60px;
-  right: 18px;
-  width: 132px;
-  height: 108px;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, var(--accent, var(--series-1)) 20%, transparent),
-    transparent 70%
-  );
-  pointer-events: none;
-  opacity: 0.5;
-}
-
+/* The accent survives as a short tick against the label, not a halo behind
+   the card. Same information, one twentieth of the ink. */
 .metric-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--s2);
   margin-bottom: var(--s3);
 }
 
+.metric-top::before {
+  content: "";
+  width: 2px;
+  align-self: stretch;
+  background: var(--accent, var(--accent-chrome));
+  flex: none;
+}
+
 .metric-label {
+  font-family: var(--mono);
   font-size: var(--fs-micro);
-  font-weight: 600;
-  letter-spacing: 0.09em;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-3);
 }
 
 .metric-icon {
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--accent, var(--series-1)) 15%, transparent);
-  color: var(--accent, var(--series-1));
+  margin-left: auto;
+  color: var(--text-4);
   flex: none;
 }
 
+/* Headline figures get the display face, not the data face. A 46px number in
+   typewriter mono is rigid in a way that reads as unfinished; Fraunces at a
+   large optical size gives it stroke contrast and a little life, while the
+   dense tables below stay in mono where alignment actually matters. */
 .metric-value {
+  font-family: var(--serif);
+  font-variation-settings: var(--serif-vars);
+  font-optical-sizing: auto;
   font-size: var(--fs-display);
   font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
   font-variant-numeric: tabular-nums;
   color: var(--text-1);
 }
 
+/* Supporting figures. The one metric each surface declares as its lead is
+   set at hero size and wins the row outright -- and `.small` cannot shrink
+   it back, since the lead rule is what the whole layout hangs on. */
 .metric-value.small {
-  font-size: 25px;
+  font-size: 24px;
+}
+
+.metric[data-lead] .metric-value,
+.metric[data-lead] .metric-value.small {
+  font-size: var(--fs-hero);
+  color: var(--text-1);
+}
+
+/* The lead also gets the only brass tick in the row, so the eye lands on it
+   before it starts reading labels. */
+.metric[data-lead] .metric-top::before {
+  background: var(--accent-chrome);
 }
 
 .metric-foot {
   margin-top: var(--s2);
   font-size: var(--fs-xs);
   color: var(--text-3);
-  line-height: 1.45;
+  line-height: 1.5;
+  max-width: 34ch;
 }
 
 .metric-spark {
@@ -646,13 +742,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-family: var(--sans);
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
   font-size: var(--fs-micro);
-  font-weight: 600;
-  letter-spacing: 0.045em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   border: 1px solid transparent;
   white-space: nowrap;
@@ -832,14 +928,16 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 26px;
-  padding: 0 10px 0 8px;
-  border-radius: 999px;
+  height: 24px;
+  padding: 0 9px 0 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--surface-2);
+  background: transparent;
   color: var(--text-2);
-  font-size: var(--fs-xs);
-  font-weight: 450;
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 0.04em;
   cursor: pointer;
   transition:
     background 0.16s var(--ease-out),
@@ -929,8 +1027,9 @@ body {
   min-width: 168px;
   max-width: 300px;
   padding: var(--s3);
-  background: rgba(28, 30, 39, 0.97);
-  backdrop-filter: blur(10px);
+  /* Opaque. Frosted glass on a tooltip is decoration, and blur over a dense
+     table makes the data behind it harder to read, not softer. */
+  background: #202023;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
@@ -1095,29 +1194,23 @@ td .muted {
 .audit-list {
   display: flex;
   flex-direction: column;
-  gap: var(--s2);
+  border-top: 1px solid var(--border);
 }
 
 .audit-entry {
   --tone: var(--text-4);
   position: relative;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: transparent;
   border-left: 2px solid var(--tone);
-  border-radius: var(--radius);
+  border-bottom: 1px solid var(--border);
   padding: var(--s3) var(--s4);
-  animation: rise 0.35s var(--ease) both;
-  transition:
-    background 0.16s var(--ease-out),
-    border-color 0.16s var(--ease-out),
-    transform 0.16s var(--ease-out);
+  transition: background 0.14s var(--ease-out);
 }
 
+/* Highlight in place. Sliding the row sideways breaks the left rule that
+   makes the column read as a column. */
 .audit-entry:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-strong);
-  border-left-color: var(--tone);
-  transform: translateX(2px);
+  background: var(--surface-2);
 }
 
 .audit-entry[data-tone="veto"] { --tone: var(--danger); }
@@ -1246,28 +1339,43 @@ td .muted {
   outline: none;
 }
 
+/* Underlined tabs on a full-width rule, rather than a segmented pill in a
+   tray. The rule ties the switch to the page structure and the brass marker
+   says which division you are reading -- the way a tabbed ledger works. */
 .tabs {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  display: flex;
+  gap: var(--s5);
   margin-bottom: var(--s5);
+  border-bottom: 1px solid var(--border);
 }
 
 .tabs button {
-  height: 32px;
-  padding: 0 var(--s4);
+  position: relative;
+  height: 34px;
+  padding: 0;
   border: none;
   background: transparent;
   color: var(--text-3);
-  border-radius: var(--radius-sm);
-  font-family: var(--sans);
-  font-size: var(--fs-sm);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
   font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: color 0.16s var(--ease-out), background 0.16s var(--ease-out);
+  transition: color 0.16s var(--ease-out);
+}
+
+.tabs button::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent-chrome);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s var(--ease-out);
 }
 
 .tabs button:hover {
@@ -1275,25 +1383,59 @@ td .muted {
 }
 
 .tabs button[data-active="true"] {
-  background: var(--surface-3);
   color: var(--text-1);
-  box-shadow: var(--shadow-sm);
+}
+
+.tabs button[data-active="true"]::after {
+  transform: scaleX(1);
 }
 
 .work-list {
   display: flex;
   flex-direction: column;
-  gap: var(--s2);
+  border-top: 1px solid var(--border);
 }
 
+/* Rows sweep in when the filter changes, so switching to "Recovered" reads
+   as the queue answering rather than as the page silently swapping content.
+   The delay is capped at the tenth row -- staggering 150 of them would take
+   four seconds and stop being feedback. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.work-list .work-item {
+  animation: row-in 0.22s var(--ease-out) both;
+}
+
+.work-list .work-item:nth-child(1) { animation-delay: 0ms; }
+.work-list .work-item:nth-child(2) { animation-delay: 14ms; }
+.work-list .work-item:nth-child(3) { animation-delay: 28ms; }
+.work-list .work-item:nth-child(4) { animation-delay: 42ms; }
+.work-list .work-item:nth-child(5) { animation-delay: 56ms; }
+.work-list .work-item:nth-child(6) { animation-delay: 70ms; }
+.work-list .work-item:nth-child(7) { animation-delay: 84ms; }
+.work-list .work-item:nth-child(8) { animation-delay: 98ms; }
+.work-list .work-item:nth-child(9) { animation-delay: 112ms; }
+.work-list .work-item:nth-child(n + 10) { animation-delay: 126ms; }
+
+/* Ledger rows, not a stack of chips. Each payment is a ruled line sharing
+   one continuous grid; the state colour is a 2px stripe at the leading edge
+   and nothing else. Removing the per-row card recovers roughly a third of
+   the vertical space, which is the whole argument for a dense table. */
 .work-item {
   --tone: var(--text-4);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
   border-left: 2px solid var(--tone);
-  border-radius: var(--radius);
-  overflow: hidden;
-  transition: border-color 0.16s var(--ease-out), background 0.16s var(--ease-out);
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  transition: background 0.14s var(--ease-out);
 }
 
 .work-item[data-state="needs_human"] { --tone: var(--danger); }
@@ -1301,8 +1443,7 @@ td .muted {
 .work-item[data-state="recovered"] { --tone: var(--success); }
 
 .work-item:hover {
-  border-color: var(--border-strong);
-  border-left-color: var(--tone);
+  background: var(--surface-2);
 }
 
 .work-head {
@@ -1310,7 +1451,7 @@ td .muted {
   display: flex;
   align-items: center;
   gap: var(--s3);
-  padding: var(--s3) var(--s4);
+  padding: 7px var(--s4);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1385,10 +1526,62 @@ td .muted {
   text-align: right;
 }
 
-.work-detail {
-  padding: 0 var(--s4) var(--s4) 44px;
-  animation: fade 0.2s var(--ease-out) both;
+/* The detail unrolls instead of appearing. `grid-template-rows: 0fr -> 1fr`
+   animates to the content's own height without anyone measuring it, and it
+   keeps the rows below moving smoothly rather than jumping down the page --
+   which is what tells you WHERE the new content came from. */
+@keyframes unroll {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+  to {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
 }
+
+.work-detail {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: unroll 0.24s var(--ease-out) both;
+}
+
+.work-detail > * {
+  min-height: 0;
+}
+
+.work-detail-inner {
+  padding: 0 var(--s4) var(--s4) 44px;
+  overflow: hidden;
+}
+
+/* Steps arrive in the order they happened, which is the point of a timeline.
+   30ms apart: quick enough to read as one gesture, slow enough to show
+   sequence. Six is the cap -- past that it stops being informative. */
+.step {
+  display: flex;
+  gap: var(--s3);
+  animation: step-in 0.26s var(--ease-out) both;
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.step:nth-child(1) { animation-delay: 0.02s; }
+.step:nth-child(2) { animation-delay: 0.05s; }
+.step:nth-child(3) { animation-delay: 0.08s; }
+.step:nth-child(4) { animation-delay: 0.11s; }
+.step:nth-child(5) { animation-delay: 0.14s; }
+.step:nth-child(n + 6) { animation-delay: 0.17s; }
 
 .work-desc {
   margin: 0 0 var(--s3);

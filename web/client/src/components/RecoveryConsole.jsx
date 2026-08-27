@@ -51,10 +51,10 @@ const when = (iso) => {
   });
 };
 
-function Stat({ label, value, prefix = "", accent, foot, animate = true }) {
+function Stat({ label, value, prefix = "", accent, foot, lead = false, animate = true }) {
   const shown = useCountUp(animate ? value : 0);
   return (
-    <div className="metric" style={{ "--accent": accent }}>
+    <div className="metric" data-lead={lead || undefined} style={{ "--accent": accent }}>
       <div className="metric-top">
         <span className="metric-label">{label}</span>
       </div>
@@ -141,39 +141,45 @@ function PaymentCard({ p, open, onToggle }) {
       </button>
 
       {open && (
+        // Two elements on purpose: the outer one animates its grid track from
+        // 0fr to 1fr, the inner one holds the content at its natural height.
+        // Collapsing them would mean animating the padding too, and the text
+        // would squash rather than be revealed.
         <div className="work-detail">
-          {p.description && <p className="work-desc">{p.description}</p>}
+          <div className="work-detail-inner">
+            {p.description && <p className="work-desc">{p.description}</p>}
 
-          {p.rationale && (
-            <div className="work-rationale">
-              <span className="audit-k">Agent</span>
-              <span>{p.rationale}</span>
-            </div>
-          )}
-
-          {p.handoff && (
-            <div className="work-handoff">
-              <Icon.Alert />
-              <span>{p.handoff}</span>
-            </div>
-          )}
-
-          <div className="steps">
-            {p.steps.map((s, i) => (
-              <Step key={i} step={s} last={i === p.steps.length - 1} />
-            ))}
-          </div>
-
-          <div className="work-foot">
-            <span>
-              {p.attempts} attempt{p.attempts === 1 ? "" : "s"}
-            </span>
-            <span>cost ₹{(p.cost_paise / 100).toFixed(2)}</span>
-            {p.recovered_paise > 0 && (
-              <span style={{ color: "var(--success)" }}>
-                recovered ₹{rs(p.recovered_paise)}
-              </span>
+            {p.rationale && (
+              <div className="work-rationale">
+                <span className="audit-k">Agent</span>
+                <span>{p.rationale}</span>
+              </div>
             )}
+
+            {p.handoff && (
+              <div className="work-handoff">
+                <Icon.Alert />
+                <span>{p.handoff}</span>
+              </div>
+            )}
+
+            <div className="steps">
+              {p.steps.map((s, i) => (
+                <Step key={i} step={s} last={i === p.steps.length - 1} />
+              ))}
+            </div>
+
+            <div className="work-foot">
+              <span>
+                {p.attempts} attempt{p.attempts === 1 ? "" : "s"}
+              </span>
+              <span>cost ₹{(p.cost_paise / 100).toFixed(2)}</span>
+              {p.recovered_paise > 0 && (
+                <span style={{ color: "var(--success)" }}>
+                  recovered ₹{rs(p.recovered_paise)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -244,6 +250,7 @@ export default function RecoveryConsole({ workflow, ledger }) {
             prefix="₹"
             value={t.recovered_paise}
             accent="var(--success)"
+            lead
             // Gross, so it does not equal the net headline on the Evidence
             // tab. `spent_paise` is only cash spent on actions -- it excludes
             // Razorpay's MDR on the recovered amount and the imputed goodwill

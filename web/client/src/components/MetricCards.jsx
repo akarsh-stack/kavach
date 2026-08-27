@@ -40,14 +40,18 @@ function Sparkline({ points, color }) {
   );
 }
 
-function Metric({ label, value, prefix = "", foot, accent, icon: Ico, spark, small, animate = true }) {
+function Metric({ label, value, prefix = "", foot, accent, icon: Ico, spark, small, lead = false, animate = true }) {
   const shown = useCountUp(animate ? value : 0);
   const display = animate
     ? `${prefix}${rs(Math.round(shown))}`
     : `${prefix}${value}`;
 
+  // `lead` is declared, not inferred from position. Which figure deserves the
+  // hero size differs per surface -- the console leads on what was recovered,
+  // this tab leads on the net result -- and a positional rule would put the
+  // emphasis on whatever happens to be printed first.
   return (
-    <div className="metric" style={{ "--accent": accent }}>
+    <div className="metric" data-lead={lead || undefined} style={{ "--accent": accent }}>
       <div className="metric-top">
         <span className="metric-label">{label}</span>
         <span className="metric-icon">
@@ -109,6 +113,7 @@ export default function MetricCards({ run }) {
           accent="var(--success)"
           icon={Icon.Trend}
           spark={spark.length > 1 ? spark : null}
+          lead
         />
       </div>
       <div className="rise rise-4">

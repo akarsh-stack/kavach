@@ -199,19 +199,25 @@ export default function App() {
             </button>
           </div>
 
+          {/* Keyed on the tab so React remounts the panel on every switch.
+              Without the key the subtree is reused and the content simply
+              blinks from one dataset to another with nothing to say it
+              changed. */}
           {tab === "console" && (
-            <RecoveryConsole
-              workflow={run.workflow}
-              ledger={
-                run.policies?.find((p) => p.policy === run.workflow.policy)?.ledger
-              }
-            />
+            <div key="console" className="tab-panel">
+              <RecoveryConsole
+                workflow={run.workflow}
+                ledger={
+                  run.policies?.find((p) => p.policy === run.workflow.policy)?.ledger
+                }
+              />
+            </div>
           )}
         </>
       )}
 
       {run && tab === "evidence" && (
-        <>
+        <div key="evidence" className="tab-panel">
           <MetricCards run={run} />
 
           <div className="section">
@@ -296,7 +302,7 @@ export default function App() {
               <AuditTrail audits={run.audits} policies={run.policies} />
             </Card>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
