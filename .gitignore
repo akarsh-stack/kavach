@@ -17,3 +17,7 @@ data/runs/demo.json
 
 # Razorpay live probe: the captured payload IS committed (it is the proof).
 # Nothing else from that flow should be.
+
+# Staged at build time from data/runs/ by web/client/scripts/stage-artifacts.mjs.
+# Committing them would mean two copies of a 2 MB artefact that must agree.
+web/client/public/data/

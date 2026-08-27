@@ -45,6 +45,28 @@ export default function RunControls({ running, onRun }) {
     return <div className="toolbar" style={{ opacity: 0.5 }}>loading…</div>;
   }
 
+  // Deployed with no backend. Offering a disabled dropdown and a dead button
+  // would read as broken; saying what this is reads as deliberate.
+  if (caps.static) {
+    return (
+      <div className="static-note">
+        <span className="static-badge">Published run</span>
+        <p>
+          Read-only deployment — the figures below are the committed evaluation.
+          Running a fresh one needs Python, so{" "}
+          <a
+            href="https://github.com/akarsh-stack/kavach#quickstart"
+            target="_blank"
+            rel="noreferrer"
+          >
+            clone the repo
+          </a>{" "}
+          to do that. No API key required there either.
+        </p>
+      </div>
+    );
+  }
+
   const isReplay = engine === "replay";
   const cachedLimit = caps.cache?.limit ?? 150;
   const sizes = isReplay ? [cachedLimit] : [100, 150, 300, 600];

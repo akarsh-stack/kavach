@@ -17,6 +17,17 @@ const j = async (url) => {
     // fetch rejects outright when the dev proxy has nothing to talk to.
     throw new Unreachable(String(e.message || e));
   }
+
+  // Asked an /api path for JSON and got a document back? Then there is no API
+  // here — this is a static host answering with the SPA shell. It arrives as a
+  // perfectly healthy 200, which is why this cannot be a status check: the
+  // previous version of this file already shipped one bug from assuming a
+  // particular status code, and a rewrite rule makes status meaningless.
+  const kind = r.headers.get("content-type") || "";
+  if (url.startsWith("/api/") && !kind.includes("json")) {
+    throw new Unreachable(`no API at ${url} (served ${kind.split(";")[0] || "?"})`);
+  }
+
   if (!r.ok) {
     const body = await r.json().catch(() => null);
     // Vite reports a dead proxy target as a plain 500 -- not 502, which is what
@@ -44,10 +55,62 @@ export async function waitForApi(fn, { tries = 12, gap = 400 } = {}) {
   }
 }
 
-export const getRun = (name = "latest") => j(`/api/run/${name}`);
-export const getSensitivity = () => j("/api/sensitivity");
+/* -------------------------------------------------------------------------
+   Static fallback
+   -------------------------------------------------------------------------
+
+   The dashboard has two homes. On a laptop it talks to the Express API, which
+   can spawn Python and actually run an evaluation. Deployed to a static host
+   there is no API at all — but everything a reader needs to SEE is a committed
+   JSON artefact that never changes at runtime, so the build stages those files
+   into `public/data/` and we read them directly.
+
+   Only the run button needs a server, and it is the only thing that degrades.
+*/
+
+/** True once we have established there is no API behind this page. */
+let staticMode = false;
+export const isStaticMode = () => staticMode;
+
+/** Try the API; on a genuine "nothing is listening", read the staged file. */
+const withStatic = async (apiPath, staticPath) => {
+  if (staticMode) return j(staticPath);
+  try {
+    return await j(apiPath);
+  } catch (e) {
+    if (!(e instanceof Unreachable)) throw e;
+    const data = await j(staticPath);
+    staticMode = true;
+    return data;
+  }
+};
+
+export const getRun = (name = "latest") =>
+  // `latest` only exists where runs happen. A static deployment has exactly
+  // one run — the published one — so both names resolve to it.
+  withStatic(`/api/run/${name}`, "/data/reference.json");
+
+export const getSensitivity = () => withStatic("/api/sensitivity", "/data/sensitivity.json");
+
 export const listRuns = () => j("/api/runs");
-export const getCapabilities = () => j("/api/capabilities");
+
+export const getCapabilities = async () => {
+  if (!staticMode) {
+    try {
+      return await j("/api/capabilities");
+    } catch (e) {
+      if (!(e instanceof Unreachable)) throw e;
+      staticMode = true;
+    }
+  }
+  // Nothing can be launched from here, and the control should say so rather
+  // than offer engines that will fail.
+  return {
+    static: true,
+    engines: [{ id: "replay", label: "Published run", available: true }],
+    cache: { entries: 0, model: null, limit: null },
+  };
+};
 
 /**
  * Start an evaluation, then watch it.

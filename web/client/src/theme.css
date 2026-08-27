@@ -535,6 +535,44 @@ samp {
   gap: var(--s2);
 }
 
+/* Shown instead of the run controls on a backend-less deployment. */
+.static-note {
+  max-width: 34ch;
+  text-align: right;
+}
+
+.static-note p {
+  margin: var(--s2) 0 0;
+  font-size: var(--fs-xs);
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
+.static-note a {
+  color: var(--accent-chrome);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(214, 160, 74, 0.4);
+}
+
+.static-note a:hover {
+  border-bottom-color: var(--accent-chrome);
+}
+
+.static-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-chrome);
+}
+
 /* ===========================================================================
    Controls
    ========================================================================= */
