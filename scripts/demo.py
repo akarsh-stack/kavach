@@ -13,8 +13,10 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import re
 import subprocess
 import sys
+import textwrap
 import time
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -22,6 +24,8 @@ if hasattr(sys.stdout, "reconfigure"):
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
+
+from agent.cache import CACHED_LIMIT  # noqa: E402
 
 W = 74
 
@@ -41,9 +45,19 @@ def beat(n: int, title: str, subtitle: str = "") -> None:
 
 
 def say(text: str) -> None:
-    """Narration cue. Indented so it reads distinctly from program output."""
-    for line in text.strip().split("\n"):
-        print(f"   | {line.strip()}")
+    """Narration cue. Indented so it reads distinctly from program output.
+
+    Paragraphs are re-wrapped rather than printed as authored, because beats
+    that interpolate live figures cannot control their own line lengths -- one
+    substituted number turned a tidy block into a single 100-column run-on.
+    """
+    paras = re.split(r"\n\s*\n", text.strip())
+    for i, para in enumerate(paras):
+        words = " ".join(line.strip() for line in para.split("\n"))
+        for line in textwrap.wrap(words, width=74) or [""]:
+            print(f"   | {line}")
+        if i < len(paras) - 1:
+            print("   | ")
     print()
 
 
@@ -208,24 +222,51 @@ def beat_4_veto(args) -> None:
 
 
 def beat_5_money(args) -> None:
-    beat(5, "The money", "python scripts/run_eval.py --no-llm")
-    r = subprocess.run(
-        [sys.executable, "scripts/run_eval.py", "--no-llm", "--limit", "300", "--save", "demo"],
-        cwd=REPO, capture_output=True, text=True,
-    )
+    # Replay by default. It needs no credentials -- every decision comes off
+    # the committed cache -- and it puts the agent and naive_llm in the table.
+    # This beat used to run --no-llm, which produces three baselines and no
+    # agent at all, while the narration said "Five policies". A demo of an AI
+    # agent that never shows the agent is a strange thing to record.
+    replay = ["--engine", "replay", "--limit", str(CACHED_LIMIT), "--no-ablation"]
+    fallback = ["--no-llm", "--limit", "300"]
+
+    def run(extra):
+        return subprocess.run(
+            [sys.executable, "scripts/run_eval.py", *extra, "--save", "demo"],
+            cwd=REPO, capture_output=True, text=True,
+        )
+
+    r = run(replay)
+    if r.returncode != 0:
+        # No usable cache (a changed prompt, a fresh batch size). Still worth
+        # showing the baselines rather than aborting the demo.
+        r = run(fallback)
+        label = "python scripts/run_eval.py --no-llm"
+    else:
+        label = f"python scripts/run_eval.py --engine replay --limit {CACHED_LIMIT}"
+    beat(5, "The money", label)
+
     show = False
+    rows = 0
     for line in r.stdout.splitlines():
         if "RECOVERY COMPARISON" in line:
             show = True
         if show:
             print(f"   {line}")
+            # Table rows are "name<spaces>engine<spaces>numbers"; count them so
+            # the narration cannot claim more policies than it just printed.
+            if re.match(r"^[a-z_]+ \*?\s+\S+\s+-?[\d,]+", line):
+                rows += 1
         if line.startswith("  WHERE THE MONEY WENT"):
             break
     print()
-    say("""
-        Five policies, the same 300 payments, the same seed -- and the randomness
-        is keyed per decision, so every policy faces identical luck at identical
-        moments. A policy that wins, won on judgement, not on dice.
+
+    n = {3: "Three", 4: "Four", 5: "Five", 6: "Six"}.get(rows, str(rows))
+    size = CACHED_LIMIT if "replay" in label else 300
+    say(f"""
+        {n} policies, the same {size} payments, the same seed -- and the
+        randomness is keyed per decision, so every policy faces identical luck at
+        identical moments. A policy that wins, won on judgement, not on dice.
 
         Now read the SECOND column before the first. On direct P&L, the dumb
         retry loop WINS. It only loses once you price the risk declines it
@@ -248,16 +289,41 @@ def beat_6_sensitivity(args) -> None:
     print(sens.one_at_a_time(pts, ["no_retry", "fixed_retry", "rules_engine"]))
     print(sens.verdict(pts, "rules_engine"))
     print()
-    say("""
-        36 combinations of the three softest assumptions in the model. The rules
-        engine wins 27 and loses 9 -- and 8 of those 9 are one column, where I
-        set compliance exposure to zero.
+
+    # Derived, never asserted. This narration used to be typed in: it said
+    # "wins 27 and loses 9" directly under output reading "wins 24/36 ... loses
+    # at 12". Contradicting your own screen is the one thing a demo cannot do,
+    # and nothing in the repo would have caught it -- it only shows up when
+    # somebody reads the whole beat aloud, which is what recording it means.
+    subject = "rules_engine"
+    total = len(pts)
+    losses = [p for p in pts if p.winner != subject]
+    wins = total - len(losses)
+    zero_expo = sum(1 for p in losses if p.exposure_mult == 0)
+
+    lifts = []
+    for p in pts:
+        others = {k: v for k, v in p.nets.items() if k != subject}
+        best = max(others.values()) if others else 0
+        if best > 0:
+            lifts.append(100.0 * (p.nets[subject] - best) / best)
+    lo, hi = (min(lifts), max(lifts)) if lifts else (0.0, 0.0)
+
+    where = (
+        f" — and {zero_expo} of those {len(losses)} sit in one column, where I set"
+        " compliance exposure to zero"
+        if zero_expo
+        else ""
+    )
+    say(f"""
+        {total} combinations of the three softest assumptions in the model. The
+        rules engine wins {wins} and loses {len(losses)}{where}.
 
         So the honest claim is conditional: doing it properly beats the dumb loop
         PROVIDED re-presenting a risk decline costs anything at all.
 
         I also can't defend the size of the lift. Across that grid it ranges from
-        minus 24 percent to plus 780. So I quote no lift number anywhere.
+        {lo:+.0f} percent to {hi:+.0f}. So I quote no lift number anywhere.
     """)
 
 

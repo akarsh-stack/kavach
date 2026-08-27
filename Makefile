@@ -35,6 +35,9 @@ demo:
 
 all: batch eval sens test
 
+# Scratch only. reference.json and sensitivity.json are COMMITTED -- they are
+# the published run and the sweep the README cites, and the dashboard reads
+# them by default. `rm -rf data/runs/*.json` took both out.
 clean:
-	rm -rf data/runs/*.json
+	rm -f data/runs/latest.json data/runs/sensitivity_baselines.json data/runs/demo.json
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +

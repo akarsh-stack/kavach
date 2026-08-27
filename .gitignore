@@ -10,6 +10,10 @@ dist/
 
 # Scratch runs from the dashboard. The committed result is reference.json.
 data/runs/latest.json
+# Credential-free sweep; the committed one is the agent sweep.
+data/runs/sensitivity_baselines.json
+# Written by scripts/demo.py.
+data/runs/demo.json
 
 # Razorpay live probe: the captured payload IS committed (it is the proof).
 # Nothing else from that flow should be.

@@ -105,7 +105,8 @@ degrading every decision to `stop`.
 - [ ] **Push to a public GitHub repo.** Form item 10 asks for the URL. 36
       commits, currently local only — no remote configured.
 - [ ] **Record the video.** Script and harness ready — `docs/VIDEO.md`,
-      `make demo`. Beats 1–4 need no model and are final.
+      `python scripts/demo.py`. No beat needs a model or a key:
+      beats 5 and 6 replay the committed cache.
 
 **Known limitations, documented and shippable:**
 

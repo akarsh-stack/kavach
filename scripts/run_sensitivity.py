@@ -39,8 +39,17 @@ def main() -> int:
     ap.add_argument("--engine", default="none", choices=["none", "ollama", "gemini", "groq", "anthropic"])
     ap.add_argument("--model", default="")
     ap.add_argument("--subject", default="", help="policy to judge; default = best available")
-    ap.add_argument("--save", default="sensitivity", help="artifact name under data/runs/")
+    ap.add_argument("--save", default="", help="artifact name under data/runs/; "
+                                               "default depends on --engine, see below")
     args = ap.parse_args()
+
+    # `sensitivity.json` is committed, it is the agent sweep, and the dashboard
+    # reads it for "Agent wins 33/36". A non-LLM sweep does not even contain the
+    # agent, so letting it write to that name replaces the headline evidence
+    # with a baselines-only grid. `make sens` did exactly that, which meant
+    # `make all` quietly destroyed the result the README cites.
+    if not args.save:
+        args.save = "sensitivity" if args.engine != "none" else "sensitivity_baselines"
 
     # Auto-size the batch. Replaying anything other than the recorded size is a
     # guaranteed cache miss, and the README documents this command verbatim --
