@@ -1,5 +1,12 @@
 # Build plan — 12 days to 5 September
 
+> **Historical.** This is the plan as written at the start, kept so the
+> difference between what was intended and what was built stays visible. It is
+> not the current state of the project — for that, see
+> [`STATE.md`](STATE.md), and for what is still wrong,
+> [`OPEN_ISSUES.md`](OPEN_ISSUES.md). Notably, this document decided *against*
+> real Razorpay API calls; that was reversed and the live probe was built.
+
 Track 03, AI Revenue Recovery. Deliverables per the brief: **public repo,
 5-minute pitch video, architecture.**
 

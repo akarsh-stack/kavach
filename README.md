@@ -461,3 +461,4 @@ Live weaknesses: [`docs/OPEN_ISSUES.md`](docs/OPEN_ISSUES.md).
 | [`docs/CALIBRATION.md`](docs/CALIBRATION.md) | Which numbers are transcribed, derived, and **assumed** |
 | [`docs/OPEN_ISSUES.md`](docs/OPEN_ISSUES.md) | Known weaknesses, kept in the repo on purpose |
 | [`docs/VIDEO.md`](docs/VIDEO.md) | Shot-by-shot script for the 5-minute submission |
+| [`docs/PLAN.md`](docs/PLAN.md) | The original build plan, kept so intent and outcome can be compared |
