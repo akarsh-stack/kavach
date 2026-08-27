@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { evaluate, getRun, getSensitivity } from "./api.js";
+import { evaluate, getRun, getSensitivity, waitForApi } from "./api.js";
 import AuditTrail from "./components/AuditTrail.jsx";
 import RecoveryConsole from "./components/RecoveryConsole.jsx";
 import RunControls from "./components/RunControls.jsx";
@@ -44,14 +44,16 @@ export default function App() {
   // switch to `latest` after a run the user actually started.
   const load = useCallback(async (which = "reference") => {
     try {
-      setRun(await getRun(which));
+      // Wait out the API/Vite startup race rather than reporting it as a
+      // missing artifact -- see waitForApi in api.js.
+      setRun(await waitForApi(() => getRun(which)));
       setSource(which);
       setError("");
     } catch (e) {
       setError(String(e.message || e));
     }
     try {
-      setSens(await getSensitivity());
+      setSens(await waitForApi(() => getSensitivity()));
     } catch {
       setSens(null);
     }
@@ -105,9 +107,19 @@ export default function App() {
             <Icon.Alert />
           </span>
           <div className="alert-body">
-            <strong>No results yet</strong>
-            {error}. Generate one with <code>python scripts/run_eval.py --no-llm</code>, or
-            press <em>Run evaluation</em>.
+            {/^API not reachable|Failed to fetch|NetworkError/i.test(error) ? (
+              <>
+                <strong>The API server is not answering</strong>
+                {error}. It starts alongside this page via{" "}
+                <code>npm run dev</code> — check that pane for a crash, then reload.
+              </>
+            ) : (
+              <>
+                <strong>No results yet</strong>
+                {error}. Generate one with <code>python scripts/run_eval.py --no-llm</code>,
+                or press <em>Run evaluation</em>.
+              </>
+            )}
           </div>
         </div>
       )}

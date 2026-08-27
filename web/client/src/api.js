@@ -1,11 +1,48 @@
+/**
+ * An error the caller should wait out rather than report.
+ *
+ * `npm run dev` starts the API and Vite concurrently, so the browser can load
+ * the page a second before Express binds. Every /api call then fails, and the
+ * dashboard used to settle into a permanent error telling the reader to go run
+ * a Python script -- advice that fixes nothing, for a problem that fixes itself
+ * in about a second. Only an F5 cleared it.
+ */
+export class Unreachable extends Error {}
+
 const j = async (url) => {
-  const r = await fetch(url);
+  let r;
+  try {
+    r = await fetch(url);
+  } catch (e) {
+    // fetch rejects outright when the dev proxy has nothing to talk to.
+    throw new Unreachable(String(e.message || e));
+  }
   if (!r.ok) {
-    const body = await r.json().catch(() => ({}));
-    throw new Error(`${r.status} ${body.error || r.statusText}`);
+    const body = await r.json().catch(() => null);
+    // Vite reports a dead proxy target as a plain 500 -- not 502, which is what
+    // this originally looked for, and why the first version of this fix did
+    // nothing. Status alone cannot separate "nothing is listening" from a real
+    // server fault. The body can: every error this API raises is JSON carrying
+    // an `error` field, and a proxy failure is not.
+    if (r.status >= 500 && !body?.error) {
+      throw new Unreachable(`API not reachable (${r.status})`);
+    }
+    throw new Error(`${r.status} ${body?.error || r.statusText}`);
   }
   return r.json();
 };
+
+/** Retry only while the backend is still coming up; surface anything else. */
+export async function waitForApi(fn, { tries = 12, gap = 400 } = {}) {
+  for (let i = 0; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!(e instanceof Unreachable) || i >= tries) throw e;
+      await new Promise((r) => setTimeout(r, gap));
+    }
+  }
+}
 
 export const getRun = (name = "latest") => j(`/api/run/${name}`);
 export const getSensitivity = () => j("/api/sensitivity");

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getCapabilities } from "../api.js";
+import { getCapabilities, waitForApi } from "../api.js";
 
 /**
  * The run toolbar, constrained to what this machine can actually do.
@@ -24,7 +24,10 @@ export default function RunControls({ running, onRun }) {
   const [limit, setLimit] = useState(150);
 
   useEffect(() => {
-    getCapabilities()
+    // Losing the startup race here is worse than it looks: the catch below
+    // pins the dropdown to "No model" for the session, so a machine with a
+    // working Ollama key would be told it has none.
+    waitForApi(() => getCapabilities())
       .then((c) => {
         setCaps(c);
         // Prefer a live model, then the recorded run, then baselines. Never
