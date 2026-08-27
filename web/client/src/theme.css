@@ -299,6 +299,47 @@ samp {
   margin-bottom: var(--s5);
 }
 
+/* Colophon. Attribution reads as a printer's mark at the foot of the sheet
+   rather than as a badge over the title. */
+.colophon {
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  flex-wrap: wrap;
+  margin-top: var(--s7);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+.colophon strong {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.colophon-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--text-3);
+  letter-spacing: 0.16em;
+}
+
+.colophon-meta {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 700px) {
+  .colophon-meta {
+    margin-left: 0;
+  }
+}
+
 .grid-2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -345,34 +386,145 @@ samp {
   line-height: 1.14;
 }
 
-.masthead .eyebrow {
-  display: inline-flex;
+/* ---------------------------------------------------------------------------
+   Brand
+   ------------------------------------------------------------------------- */
+
+.brand {
+  display: flex;
   align-items: center;
-  gap: var(--s2);
-  font-family: var(--mono);
-  font-size: var(--fs-micro);
-  font-weight: 500;
-  letter-spacing: 0.18em;
+  gap: var(--s4);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* The wordmark settles into place: it arrives tracked wide and closes to its
+   set value over half a second. It is the one piece of theatre on the page,
+   it happens once, and it is the reason the header reads as a masthead
+   rather than as a heading. */
+@keyframes wordmark-settle {
+  from {
+    opacity: 0;
+    letter-spacing: 0.42em;
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.14em;
+  }
+}
+
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-3);
-  margin-bottom: var(--s3);
-  padding-bottom: var(--s3);
-  border-bottom: 1px solid var(--border);
+  color: var(--text-1);
+  animation: wordmark-settle 0.62s var(--ease-out) both;
+  animation-delay: 0.1s;
 }
 
-.masthead .eyebrow .dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--success);
+/* Devanagari at the same optical weight, dimmed, so the name reads bilingually
+   without the second script competing with the first. */
+.wordmark-deva {
+  font-family: var(--serif);
+  font-variation-settings: var(--serif-vars);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--accent-chrome);
+  opacity: 0.85;
+  animation: fade 0.5s var(--ease-out) both;
+  animation-delay: 0.5s;
 }
 
-.masthead .sub {
-  margin: var(--s3) 0 0;
+.tagline {
+  margin: 0;
+  font-family: var(--serif);
+  font-variation-settings: var(--serif-vars);
+  font-optical-sizing: auto;
+  font-size: 15px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-2);
+  animation: rise 0.4s var(--ease-out) both;
+  animation-delay: 0.28s;
+}
+
+/* -- the mark ------------------------------------------------------------ */
+
+.logo {
+  flex: none;
+  display: block;
+}
+
+/* The boundary draws before the decision appears inside it.
+   The dash length must match the path length or the trace does not read: the
+   shield measures 64.5 units via getTotalLength(), the inner rule 10.8. A
+   dash of 168 on a 64.5 path spends most of the animation off the end of the
+   stroke and looks like a flicker. */
+@keyframes logo-trace {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dot-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.logo-draw .logo-shield {
+  --len: 65;
+  stroke-dasharray: 65;
+  animation: logo-trace 0.72s var(--ease-out) both;
+}
+
+.logo-draw .logo-inner {
+  --len: 11;
+  stroke-dasharray: 11;
+  animation: logo-trace 0.4s var(--ease-out) both;
+  animation-delay: 0.5s;
+}
+
+.logo-draw .logo-dot {
+  transform-origin: 12px 13.2px;
+  animation: dot-arrive 0.34s var(--ease-out) both;
+  animation-delay: 0.66s;
+}
+
+/* -- run provenance ------------------------------------------------------ */
+
+.masthead .sub,
+.runline {
+  margin: 0;
   color: var(--text-3);
   font-size: var(--fs-sm);
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
+}
+
+.runline {
+  margin: calc(var(--s6) * -1 + var(--s4)) 0 var(--s6);
 }
 
 /* No tray. The controls sit directly on the page and are separated from the

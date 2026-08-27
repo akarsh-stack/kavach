@@ -1,5 +1,5 @@
 {
-  "name": "recovery-agent-client",
+  "name": "kavach-client",
   "version": "1.0.0",
   "private": true,
   "type": "module",

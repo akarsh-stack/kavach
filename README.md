@@ -1,6 +1,13 @@
-# Bounded Revenue Recovery
+# Kavach · कवच
 
-**Razorpay Buildathon — Track 03, AI Revenue Recovery**
+**Bounded revenue recovery** — an LLM agent for failed payments, held inside a
+deterministic policy layer.
+
+*Kavach* is Sanskrit for armour. The policy layer is the armour: the model
+proposes, and eight ordered rules allow, defer or veto every proposal before it
+touches a customer or a card network.
+
+Built for the **Razorpay Buildathon** — Track 03, AI Revenue Recovery.
 
 An agent that works a queue of failed Razorpay payments: diagnoses each root
 cause, chooses a bounded recovery action, escalates what needs a human, and

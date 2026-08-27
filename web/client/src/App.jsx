@@ -7,6 +7,7 @@ import RunControls from "./components/RunControls.jsx";
 import RunLog from "./components/RunLog.jsx";
 import CostStack from "./components/CostStack.jsx";
 import DiagnosisTable from "./components/DiagnosisTable.jsx";
+import Logo from "./components/Logo.jsx";
 import MetricCards from "./components/MetricCards.jsx";
 import PolicyBars from "./components/PolicyBars.jsx";
 import SensitivityGrid from "./components/SensitivityGrid.jsx";
@@ -110,24 +111,31 @@ export default function App() {
   return (
     <div className="app">
       <header className="masthead rise">
-        <div>
-          <div className="eyebrow">
-            <span className="dot" />
-            Razorpay Buildathon · Track 03
+        <div className="brand">
+          <Logo size={38} />
+          <div className="brand-text">
+            <h1 className="wordmark">
+              Kavach
+              <span className="wordmark-deva" aria-hidden="true">
+                कवच
+              </span>
+            </h1>
+            <p className="tagline">Bounded revenue recovery</p>
           </div>
-          <h1>Bounded revenue recovery</h1>
-          <p className="sub">
-            {run
-              ? `${source} · ${run.workflow?.policy ?? "agent"} · ` +
-                `${run.batch_size} payments · ${run.workflow?.engine ?? "?"} · ` +
-                new Date(run.generated_at).toLocaleString()
-              : "loading…"}
-          </p>
         </div>
 
         <RunControls running={running} onRun={start} />
-
       </header>
+
+      {/* The run's provenance, on its own rule under the brand. It is metadata
+          about what you are looking at, not part of the title. */}
+      <p className="sub runline">
+        {run
+          ? `${source} · ${run.workflow?.policy ?? "agent"} · ` +
+            `${run.batch_size} payments · ${run.workflow?.engine ?? "?"} · ` +
+            new Date(run.generated_at).toLocaleString()
+          : "loading…"}
+      </p>
 
       {error && (
         <div className="alert rise" style={{ "--tone": "var(--warning)" }}>
@@ -304,6 +312,21 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Attribution belongs at the foot, the way a colophon does. Leading
+          with it made the page look like a submission rather than a product. */}
+      <footer className="colophon">
+        <span className="colophon-mark">
+          <Logo size={16} animate={false} />
+          Kavach
+        </span>
+        <span>
+          Built for the <strong>Razorpay Buildathon</strong> · Track 03
+        </span>
+        <span className="colophon-meta">
+          {run ? `seed ${run.seed} · ${run.batch_size} payments` : ""}
+        </span>
+      </footer>
     </div>
   );
 }
