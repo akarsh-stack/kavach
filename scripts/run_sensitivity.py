@@ -21,6 +21,7 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+from agent.cache import CACHED_LIMIT, ReplayMiss  # noqa: E402
 from evaluation import sensitivity as sens  # noqa: E402
 from evaluation.baselines import (  # noqa: E402
     FixedRetryPolicy,
@@ -33,12 +34,19 @@ from evaluation.baselines import (  # noqa: E402
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--limit", type=int, default=300)
+    ap.add_argument("--limit", type=int, default=0,
+                    help="0 = auto: the cached batch size when replaying, else 300")
     ap.add_argument("--engine", default="none", choices=["none", "ollama", "gemini", "groq", "anthropic"])
     ap.add_argument("--model", default="")
     ap.add_argument("--subject", default="", help="policy to judge; default = best available")
     ap.add_argument("--save", default="sensitivity", help="artifact name under data/runs/")
     args = ap.parse_args()
+
+    # Auto-size the batch. Replaying anything other than the recorded size is a
+    # guaranteed cache miss, and the README documents this command verbatim --
+    # a clean clone ran it and got a traceback.
+    if not args.limit:
+        args.limit = CACHED_LIMIT if args.engine != "none" else 300
 
     if args.engine == "none":
         subject = args.subject or "rules_engine"
@@ -81,7 +89,17 @@ def main() -> int:
     print(f"sweeping {grid} grid points, subject = {subject}\n")
 
     t0 = time.time()
-    points = sens.sweep(make, seed=args.seed, limit=args.limit)
+    try:
+        points = sens.sweep(make, seed=args.seed, limit=args.limit)
+    except ReplayMiss:
+        print()
+        print("  This batch has no recorded decisions to replay.")
+        print(f"  The committed cache covers the {CACHED_LIMIT}-payment batch only,")
+        print(f"  and you asked for {args.limit} with no live model available.")
+        print()
+        print(f"  Try:  python scripts/run_sensitivity.py --limit {CACHED_LIMIT}")
+        print("  Or add a provider key to .env and re-run to record this batch.")
+        return 2
     print(f"\n{grid} points in {time.time() - t0:.1f}s\n")
     if args.engine != "none":
         # Same tail-flush as run_eval: the sweep records new decisions on its

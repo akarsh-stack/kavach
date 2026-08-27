@@ -129,6 +129,13 @@ def decide(obs, engine: str) -> None:
     if ruling.explanation:
         print(f"               {ruling.explanation}")
 
+    # Persist the decision. Without this the probe computed live every time and
+    # never wrote anything, so a clean clone -- which has no credentials -- hit
+    # a ReplayMiss on the one command the README and the video script both
+    # claim works offline.
+    if hasattr(client, "save"):
+        client.save()
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()

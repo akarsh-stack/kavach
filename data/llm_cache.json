@@ -15257,6 +15257,17 @@
 "recovery_class": "merchant_fix"
 }
 },
+"d168fdb451db4d9fa710b144071fab17": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "escalate",
+"channel": null,
+"confidence": 0.98,
+"delay_hours": 0.0,
+"rationale": "Reason maps to hard_stop per Razorpay guide; compliance block must be escalated, no retry or customer contact.",
+"recovery_class": "hard_stop"
+}
+},
 "d1797a3c92187e4dd6dbf3b583aa344f": {
 "model": "gpt-oss:120b",
 "value": {
