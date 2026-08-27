@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { evaluate, getRun, getSensitivity, waitForApi } from "./api.js";
 import AuditTrail from "./components/AuditTrail.jsx";
@@ -30,6 +30,7 @@ export default function App() {
   const [sens, setSens] = useState(null);
   const [error, setError] = useState("");
   const [runError, setRunError] = useState("");
+  const lines = useRef([]);
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState([]);
   const [dismissed, setDismissed] = useState(false);
@@ -69,9 +70,16 @@ export default function App() {
     setLog([]);
     setRunError("");
     setDismissed(false);
+    // The completion callback closes over stale state, and the log pane is
+    // collapsible and sticky -- so "exit code 2" could be the only thing a
+    // reader sees while the actual reason sat hidden one pane down.
+    lines.current = [];
     evaluate(
       { limit, seed: 42, engine },
-      (l) => setLog((prev) => [...prev, l]),
+      (l) => {
+        lines.current.push(l.line);
+        setLog((prev) => [...prev, l]);
+      },
       // The outcome used to be dropped on the floor: this callback took no
       // arguments, so a run that aborted -- a replay miss, a fatal model error,
       // or a 409 because another run was already going -- stopped the spinner
@@ -81,7 +89,15 @@ export default function App() {
       async (result) => {
         setRunning(false);
         if (result && result.code !== 0) {
-          setRunError(result.error || `the run exited with code ${result.code}`);
+          const reason = lines.current
+            .map((l) => (l || "").trim())
+            .reverse()
+            .find((l) => /^(Run aborted:|CALIBRATION FAILED|This batch has no recorded)/.test(l));
+          setRunError(
+            result.error ||
+              reason ||
+              `the run exited with code ${result.code}`,
+          );
           return;
         }
         await load("latest");
@@ -143,8 +159,8 @@ export default function App() {
           </span>
           <div className="alert-body">
             <strong>That run did not finish</strong>
-            {runError}. The figures below are the previous result, unchanged —
-            nothing from the failed run was loaded.
+            {runError.replace(/\.\s*$/, "")}. The figures below are the previous result,
+            unchanged — nothing from the failed run was loaded.
           </div>
         </div>
       )}
