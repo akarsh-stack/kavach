@@ -18,10 +18,24 @@ export const getCapabilities = () => j("/api/capabilities");
  * POST starts; the SSE stream only observes. EventSource speaks GET and
  * reconnects on every blip, so a GET with a side effect behind it re-runs the
  * job -- which silently spawned five evaluations before this split existed.
+ *
+ * A poll runs alongside the stream as a watchdog. If the Python process dies
+ * before the stream attaches, or a `done` frame is lost, the stream alone
+ * leaves the button spinning forever with no way back. The dashboard hung
+ * exactly that way when an Anthropic run aborted on a billing error. The poll
+ * asks the server a direct question -- is a job running? -- and no missed
+ * event can lie about the answer.
  */
 export async function evaluate({ limit, seed, engine }, onLog, onDone) {
   const qs = new URLSearchParams({ limit, seed, engine });
-  const started = await fetch(`/api/evaluate?${qs}`, { method: "POST" });
+
+  let started;
+  try {
+    started = await fetch(`/api/evaluate?${qs}`, { method: "POST" });
+  } catch (e) {
+    onDone({ code: -1, error: String(e.message || e) });
+    return () => {};
+  }
   if (!started.ok) {
     const body = await started.json().catch(() => ({}));
     onDone({ code: -1, error: body.error || started.statusText });
@@ -30,9 +44,12 @@ export async function evaluate({ limit, seed, engine }, onLog, onDone) {
 
   const es = new EventSource("/api/stream");
   let finished = false;
+  let poll;
+
   const finish = (payload) => {
     if (finished) return;
     finished = true;
+    clearInterval(poll);
     es.close();
     onDone(payload);
   };
@@ -40,7 +57,19 @@ export async function evaluate({ limit, seed, engine }, onLog, onDone) {
   es.addEventListener("log", (e) => onLog(JSON.parse(e.data)));
   es.addEventListener("done", (e) => finish(JSON.parse(e.data)));
   es.addEventListener("idle", () => finish({ code: 0 }));
-  es.onerror = () => finish({ code: -1 });
+  // An EventSource error alone is NOT proof the job ended -- it reconnects.
+  // Let the watchdog decide.
+
+  poll = setInterval(async () => {
+    try {
+      const r = await fetch("/api/job");
+      const { running } = await r.json();
+      if (!running) finish({ code: 0 });
+    } catch {
+      /* transient; the next tick will retry */
+    }
+  }, 2500);
+
   return () => finish({ code: -1 });
 }
 

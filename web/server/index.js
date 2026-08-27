@@ -232,7 +232,9 @@ function startJob(args) {
     buffer += chunk.toString();
     const lines = buffer.split("\n");
     buffer = lines.pop() ?? "";
-    for (const line of lines) {
+    const CR = String.fromCharCode(13);
+    for (const rawLine of lines) {
+      const line = rawLine.endsWith(CR) ? rawLine.slice(0, -1) : rawLine;
       job.lines.push(line);
       broadcast("log", { stream, line });
     }

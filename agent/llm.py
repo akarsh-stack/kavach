@@ -233,9 +233,29 @@ class AnthropicClient(LLMClient):
                 if self._fallback_supported and "beta" in str(exc).lower():
                     self._fallback_supported = False
                     continue
+
+                detail = str(exc).lower()
+                # A key can be valid and still unusable. An exhausted balance
+                # arrives as a 400, not a 402, and previously escaped as a raw
+                # APIStatusError -- which the policy layer does not catch, so it
+                # tore through the thread pool and killed the run with a
+                # traceback while the dashboard sat on "Running..." forever.
+                if any(
+                    h in detail
+                    for h in ("credit balance", "quota", "billing", "insufficient")
+                ):
+                    self._record(failures=1)
+                    raise LLMQuotaExhausted(
+                        "Anthropic rejected the request: credit balance too low. "
+                        "Add credits at console.anthropic.com/settings/billing, or "
+                        "pick another engine."
+                    ) from exc
+
                 if exc.status_code < 500 and exc.status_code != 429:
                     self._record(failures=1)
-                    raise
+                    raise LLMUnavailable(
+                        f"Anthropic HTTP {exc.status_code}: {str(exc)[:200]}"
+                    ) from exc
                 last = exc
                 self._record(retries=1)
                 continue
