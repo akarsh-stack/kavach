@@ -48,21 +48,20 @@ export default function RunControls({ running, onRun }) {
   // Deployed with no backend. Offering a disabled dropdown and a dead button
   // would read as broken; saying what this is reads as deliberate.
   if (caps.static) {
+    // Deliberately terse. An earlier version explained read-only deployments
+    // and how to clone the repo, in three lines, directly beside the title --
+    // the most valuable space on the page spent apologising for a missing
+    // button nobody had asked for.
     return (
       <div className="static-note">
-        <span className="static-badge">Published run</span>
-        <p>
-          Read-only deployment — the figures below are the committed evaluation.
-          Running a fresh one needs Python, so{" "}
-          <a
-            href="https://github.com/akarsh-stack/kavach#quickstart"
-            target="_blank"
-            rel="noreferrer"
-          >
-            clone the repo
-          </a>{" "}
-          to do that. No API key required there either.
-        </p>
+        <a
+          className="static-badge"
+          href="https://github.com/akarsh-stack/kavach"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Source on GitHub
+        </a>
       </div>
     );
   }

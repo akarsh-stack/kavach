@@ -5,6 +5,7 @@ import AuditTrail from "./components/AuditTrail.jsx";
 import RecoveryConsole from "./components/RecoveryConsole.jsx";
 import RunControls from "./components/RunControls.jsx";
 import RunLog from "./components/RunLog.jsx";
+import Thesis from "./components/Thesis.jsx";
 import CostStack from "./components/CostStack.jsx";
 import DiagnosisTable from "./components/DiagnosisTable.jsx";
 import Logo from "./components/Logo.jsx";
@@ -127,16 +128,6 @@ export default function App() {
         <RunControls running={running} onRun={start} />
       </header>
 
-      {/* The run's provenance, on its own rule under the brand. It is metadata
-          about what you are looking at, not part of the title. */}
-      <p className="sub runline">
-        {run
-          ? `${source} · ${run.workflow?.policy ?? "agent"} · ` +
-            `${run.batch_size} payments · ${run.workflow?.engine ?? "?"} · ` +
-            new Date(run.generated_at).toLocaleString()
-          : "loading…"}
-      </p>
-
       {error && (
         <div className="alert rise" style={{ "--tone": "var(--warning)" }}>
           <span className="alert-icon">
@@ -195,6 +186,19 @@ export default function App() {
       )}
 
       <RunLog log={log} running={running} failed={Boolean(runError)} />
+
+      {run && <Thesis policies={run.policies} batchSize={run.batch_size} />}
+
+      {/* The run's provenance, on its own rule under the brand. It is metadata
+          about what you are looking at, not part of the title. */}
+      <p className="sub runline">
+        {run
+          ? `${source} · ${run.workflow?.policy ?? "agent"} · ` +
+            `${run.batch_size} payments · ${run.workflow?.engine ?? "?"} · ` +
+            new Date(run.generated_at).toLocaleString()
+          : "loading…"}
+      </p>
+
 
       {run && (
         <>

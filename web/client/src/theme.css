@@ -524,7 +524,110 @@ samp {
 }
 
 .runline {
-  margin: calc(var(--s6) * -1 + var(--s4)) 0 var(--s6);
+  margin: calc(var(--s6) * -1 + var(--s4)) 0 var(--s5);
+}
+
+/* ---------------------------------------------------------------------------
+   The claim
+   -------------------------------------------------------------------------
+   Sits above the tabs because the argument has to arrive before the evidence.
+   A reader who gives this page fifteen seconds used to see "Recovered ₹43,862"
+   with nothing to compare it to. */
+
+/* No top rule: the masthead already closes with one, and two hairlines a few
+   pixels apart read as a rendering fault rather than as structure. */
+.thesis {
+  padding: 0 0 var(--s6);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--s5);
+}
+
+.thesis-lede {
+  margin: 0 0 var(--s5);
+  max-width: 68ch;
+  font-family: var(--serif);
+  font-variation-settings: var(--serif-vars);
+  font-optical-sizing: auto;
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--text-1);
+}
+
+.thesis-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  max-width: 62ch;
+}
+
+.thesis-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding-left: var(--s4);
+  border-left: 2px solid var(--tone);
+}
+
+.thesis-side + .thesis-side {
+  margin-left: var(--s5);
+}
+
+.thesis-side[data-tone="good"] { --tone: var(--success); }
+.thesis-side[data-tone="bad"]  { --tone: var(--danger); }
+
+.thesis-label {
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.thesis-figure {
+  font-family: var(--serif);
+  font-variation-settings: var(--serif-vars);
+  font-optical-sizing: auto;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--tone);
+}
+
+.thesis-sub {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.thesis-kicker {
+  margin: var(--s5) 0 0;
+  max-width: 72ch;
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+.thesis-kicker em {
+  font-style: italic;
+  color: var(--text-1);
+}
+
+.thesis-kicker strong {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+@media (max-width: 620px) {
+  .thesis-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s4);
+  }
+  .thesis-side + .thesis-side {
+    margin-left: 0;
+  }
 }
 
 /* No tray. The controls sit directly on the page and are separated from the
@@ -562,14 +665,21 @@ samp {
   display: inline-flex;
   align-items: center;
   gap: var(--s2);
-  padding: 3px 8px;
+  height: 32px;
+  padding: 0 var(--s4);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-family: var(--mono);
-  font-size: var(--fs-micro);
+  font-size: var(--fs-xs);
   font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  color: var(--text-2);
+  transition: border-color 0.16s var(--ease-out), color 0.16s var(--ease-out);
+}
+
+.static-badge:hover {
+  border-color: var(--accent-chrome);
   color: var(--accent-chrome);
 }
 
