@@ -1,6 +1,7 @@
 # Core. The simulator, agent, guardrails and evaluation need only these.
 pydantic>=2.0
 pytest>=8.0
+pyflakes>=3.0   # tests/test_no_undefined_names.py; skipped if absent
 
 # Optional: the Anthropic backend. Ollama needs nothing (stdlib urllib).
 # pip install anthropic

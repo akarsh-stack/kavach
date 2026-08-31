@@ -48,6 +48,7 @@ from pydantic import BaseModel, ValidationError
 
 from agent.jsonio import contract as _contract
 from agent.jsonio import extract_json as _extract_json
+from agent.jsonio import repair_turn as _repair_turn
 from agent.llm import LLMClient, LLMQuotaExhausted, LLMUnavailable, _json_schema
 
 T = TypeVar("T", bound=BaseModel)
@@ -144,7 +145,7 @@ class OllamaClient(LLMClient):
             a == self.model or a.split(":")[0] == self.model.split(":")[0] for a in available
         ):
             pull = (
-                f"pick one of the cloud models above"
+                "pick one of the cloud models above"
                 if self.cloud
                 else f"run:  ollama pull {self.model}"
             )
@@ -279,18 +280,14 @@ class OllamaClient(LLMClient):
                 # invented or which type it got wrong.
                 last = exc
                 self._record(retries=1)
-                payload["messages"] = payload["messages"][:2] + [
-                    {"role": "assistant", "content": text},
-                    {
-                        "role": "user",
-                        "content": (
-                            "That did not match the required shape:\n"
-                            f"{_errors(exc)}\n\n"
-                            "Return ONLY the corrected JSON object with exactly the "
-                            "required keys. No prose, no extra keys."
-                        ),
-                    },
-                ]
+                # Use the shared builder rather than a second copy of it. This
+                # branch had inlined its own version calling `_errors`, which
+                # does not exist in this module -- so the moment a response
+                # failed validation the run died with a NameError instead of
+                # repairing. It survived every test because it is only reachable
+                # when the model returns malformed JSON, which it does not do
+                # until the provider is under load.
+                payload["messages"] = payload["messages"][:2] + _repair_turn(text, exc)
 
         self._record(failures=1)
         raise LLMUnavailable(f"ollama failed after {self.max_attempts} attempts: {last}")
