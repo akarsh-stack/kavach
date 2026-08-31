@@ -222,6 +222,13 @@ export default function App() {
                 ledger={
                   run.policies?.find((p) => p.policy === run.workflow.policy)?.ledger
                 }
+                // The model that actually produced these decisions, read from
+                // the run. It was recorded in the artefact all along and shown
+                // nowhere, so the console read as a rules engine.
+                model={
+                  run.policies?.find((p) => p.policy === run.workflow.policy)
+                    ?.llm_usage?.model
+                }
               />
             </div>
           )}

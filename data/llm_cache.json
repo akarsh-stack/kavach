@@ -638,6 +638,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"085a8e011f529601eaf54cffc3002011": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.68,
+"delay_hours": 2.0,
+"rationale": "Customer cancelled the UPI payment, likely accidental or due to hesitation. After 4 prior contact attempts, a gentle WhatsApp reminder with a quick retry link can recover the sale without being intrusive.",
+"recovery_class": "nudge_customer"
+}
+},
 "085b29eca3fd972420ba3eb892f95139": {
 "model": "gpt-oss:120b",
 "value": {
@@ -757,6 +768,17 @@
 "delay_hours": 0.0,
 "rationale": "5 retries already attempted with same UPI app; gateway error likely user\u2011side (e.g., app glitch or insufficient funds). Nudging to try a different UPI app or card can recover payment without further retries.",
 "recovery_class": "nudge_customer"
+}
+},
+"09c2ef0253e7e6cc2763f88199623290": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.87,
+"delay_hours": 0.5,
+"rationale": "Invalid response from gateway is likely a transient glitch. No downtime reported and only two attempts made. A short wait and another retry on the same UPI rail has high chance of success.",
+"recovery_class": "retry_same"
 }
 },
 "09d4c5ca6df8ac221de04da130a2a7d5": {
@@ -1054,6 +1076,17 @@
 "delay_hours": 0.5,
 "rationale": "Failure due to incorrect PIN is a customer input error. Prompt the user to re-enter the correct PIN and retry the same card payment. A gentle WhatsApp reminder after 30 minutes balances urgency with user convenience.",
 "recovery_class": "retry_same"
+}
+},
+"0d1e14c12141ffdc98d71ea49e89e6c6": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.78,
+"delay_hours": 2.0,
+"rationale": "Insufficient funds on UPI GPAY; customer likely needs to add money. Nudge them to top up and schedule a retry after a short interval.",
+"recovery_class": "retry_later_funds"
 }
 },
 "0d6d397c42b9abf88ac9eb5d577fe884": {
@@ -3047,6 +3080,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"2582db1b311a01280e3d3f541886984e": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.95,
+"delay_hours": 0.0,
+"rationale": "Failure due to incorrect CVV is a customer input error. Prompt the customer to re-enter the correct CVV via a friendly WhatsApp message to recover the payment.",
+"recovery_class": "nudge_customer"
+}
+},
 "25909eed01319e8e3d42102431793c89": {
 "model": "gpt-oss:120b",
 "value": {
@@ -3133,6 +3177,17 @@
 "delay_hours": 2.0,
 "rationale": "Bank not available is a temporary gateway issue; retrying after a short wait is likely to succeed. No customer contact needed yet.",
 "recovery_class": "retry_same"
+}
+},
+"26ddde8ddaca71e01e282ffda6ebe5a4": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "whatsapp",
+"confidence": 0.86,
+"delay_hours": 2.0,
+"rationale": "Bank technical error from Axis caused failure; 7 retries already attempted. Switching to a different payment rail (e.g., UPI or another card) after a short delay maximizes chance of success without further burdening the customer.",
+"recovery_class": "switch_rail"
 }
 },
 "26df664a6c73b97c2f5ee66166776bfd": {
@@ -3245,6 +3300,17 @@
 "recovery_class": "retry_same"
 }
 },
+"28481e3e7ce5459359c630994f852c3b": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.87,
+"delay_hours": 12.0,
+"rationale": "Risk check failed at issuer bank; likely a temporary block. Customer has prior success and active subscription. Retrying after a moderate delay gives issuer chance to lift block without bothering the customer.",
+"recovery_class": "retry_same"
+}
+},
 "28bca96469bca6d9307b798d1ba409b3": {
 "model": "gpt-oss:120b",
 "value": {
@@ -3265,6 +3331,17 @@
 "delay_hours": 0.0,
 "rationale": "Funds are blocked by the existing UPI mandate. The issue requires the customer to release or add funds to the mandate. A gentle nudge asking them to check their PhonePe/mandate status is the best next step.",
 "recovery_class": "nudge_customer"
+}
+},
+"29178943d2c90c4d3621f10134989a5d": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "stop",
+"channel": null,
+"confidence": 0.78,
+"delay_hours": 0.0,
+"rationale": "Payment timed out and customer hasn't responded after 6 contact attempts. High messaging frequency and low LTV suggest further nudges risk annoyance with minimal recovery chance.",
+"recovery_class": "hard_stop"
 }
 },
 "2917ee7a9c5ff408a6f880fb43170a84": {
@@ -3485,6 +3562,17 @@
 "delay_hours": 2.0,
 "rationale": "Risk check failed likely due to issuer flagging the card. Customer should verify or update card details or choose an alternate payment method. Nudging now gives a chance to resolve before further retries.",
 "recovery_class": "nudge_customer"
+}
+},
+"2c4cd2253111d2111f67a08a8e26099d": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.78,
+"delay_hours": 24.0,
+"rationale": "Insufficient funds indicate the customer needs to add money. After 4 attempts and 3 messages, a delayed retry in 24 hours gives them time to top up without further spamming.",
+"recovery_class": "retry_later_funds"
 }
 },
 "2caf0f01e33723bb665a942f836e009a": {
@@ -4037,6 +4125,17 @@
 "recovery_class": "retry_later_funds"
 }
 },
+"33fc1d1df536a4b8f344736ec22698ce": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "whatsapp",
+"confidence": 0.86,
+"delay_hours": 0.0,
+"rationale": "Bank account is invalid; after 3 retries and 3 messages, further attempts will fail. Prompt the customer to provide a new payment method (bank account or card) to continue the subscription.",
+"recovery_class": "switch_rail"
+}
+},
 "3421c679ec7e0ebde795e537a60e4605": {
 "model": "gpt-oss:120b",
 "value": {
@@ -4431,6 +4530,17 @@
 "delay_hours": 2.0,
 "rationale": "Gateway error likely transient; two attempts failed quickly. A third retry after a short pause may succeed without bothering the customer.",
 "recovery_class": "retry_same"
+}
+},
+"382f3e75225eeba55a768836f1176144": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.68,
+"delay_hours": 0.0,
+"rationale": "Payment timed out via SBI wallet; customer likely paused. After 5 prior messages, a single gentle reminder now (via WhatsApp) gives them a chance to complete without over\u2011messaging. Timing is urgent but not pushy.",
+"recovery_class": "nudge_customer"
 }
 },
 "3834782687d1e2d5f0744d564880afd0": {
@@ -6675,6 +6785,17 @@
 "delay_hours": 2.5,
 "rationale": "authentication_failed maps to nudge_customer; we can send a second message (limit 2) using WhatsApp for higher success, delayed until after 09:00 to respect messaging window.",
 "recovery_class": "nudge_customer"
+}
+},
+"5738345d85f5bf9fe05a129c450b4346": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.78,
+"delay_hours": 4.0,
+"rationale": "Risk check failed at issuer bank, likely a temporary block or insufficient funds. No prior issues, so retry after a short delay to allow the bank to clear the hold.",
+"recovery_class": "retry_later_funds"
 }
 },
 "57629f23bb692fdcb5a9480ddc3b8681": {
@@ -9163,6 +9284,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"766d98697fdea374217bda6146d18d2b": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.6,
+"delay_hours": 2.0,
+"rationale": "Customer explicitly cancelled payment; retry likely to fail. A gentle nudge offering assistance or an alternative payment method may recover the amount without being intrusive.",
+"recovery_class": "nudge_customer"
+}
+},
 "76792a916970de44538d5b5645ef7eb5": {
 "model": "gpt-oss:120b",
 "value": {
@@ -10098,6 +10230,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"80c80047aecc37e09fee3554dcbabe76": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.78,
+"delay_hours": 4.0,
+"rationale": "Risk check failure may be temporary; with no prior issues, a silent retry after a short interval often clears. No customer contact needed yet.",
+"recovery_class": "retry_same"
+}
+},
 "812494db8385cf9fdff4a80db0ff9f05": {
 "model": "gpt-oss:120b",
 "value": {
@@ -10557,6 +10700,17 @@
 "confidence": 0.85,
 "delay_hours": 0.0,
 "rationale": "Transaction limit exceeded on the card means retrying will likely fail. Switching to an alternative payment rail (UPI, netbanking, another card) gives the best chance to capture the Rs 567.63 now.",
+"recovery_class": "switch_rail"
+}
+},
+"86f696ef2c1a2270b0c7eedbf9931ff6": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "switch_rail",
+"channel": "sms",
+"confidence": 0.78,
+"delay_hours": 0.0,
+"rationale": "Risk check failed at issuer bank for emandate; retry likely to repeat. Offer customer an alternate payment method (card/UPI) to complete the subscription.",
 "recovery_class": "switch_rail"
 }
 },
@@ -11242,6 +11396,17 @@
 "recovery_class": "retry_same"
 }
 },
+"919099f07b6a5a54118aeae2ec75e6b0": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.78,
+"delay_hours": 1.0,
+"rationale": "Failure is due to 3D secure/OTP authentication. No systemic issues detected. Customer likely missed or entered wrong OTP. After 4 attempts and 3 messages, a gentle reminder via WhatsApp asking to retry now can recover the payment.",
+"recovery_class": "nudge_customer"
+}
+},
 "91de7b43c372360e1081c8392adc21d2": {
 "model": "gpt-oss:120b",
 "value": {
@@ -11328,6 +11493,17 @@
 "delay_hours": 0.0,
 "rationale": "vpa_resolution_failed is a transient gateway error. After 5 retries, further automatic attempts are unlikely to succeed. Prompt the user now to retry via a different UPI app or payment method to resolve the VPA issue.",
 "recovery_class": "nudge_customer"
+}
+},
+"92ea0fe2642d3291cbd1cee9c094da91": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.92,
+"delay_hours": 0.0,
+"rationale": "Gateway returned an invalid response, but no downtime reported and no recent similar failures. Likely a transient issue; an immediate retry without customer contact maximizes chance of recovery.",
+"recovery_class": "retry_same"
 }
 },
 "930a4ad284aea068de5b49f925c86d26": {
@@ -11867,6 +12043,17 @@
 "delay_hours": 0.5,
 "rationale": "UPI payment via GPAY failed with generic gateway error; no downtime reported and no recent similar failures. Likely transient issue, so a quick same\u2011method retry is appropriate.",
 "recovery_class": "retry_same"
+}
+},
+"9ace0efe8d132480a70d26dfac0d3f3c": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.85,
+"delay_hours": 0.0,
+"rationale": "Insufficient funds is a customer\u2011side issue. After 3 retries and 2 messages, the best chance is to ask the user to top\u2011up and retry later. Immediate nudge via WhatsApp maximizes response while avoiding further failed attempts.",
+"recovery_class": "retry_later_funds"
 }
 },
 "9ad99d2f9be80f5f03c93739df2d9974": {
@@ -13398,6 +13585,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"aaaf9f31d33b6fe10bfc850e8dea3139": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": "sms",
+"confidence": 0.78,
+"delay_hours": 4.0,
+"rationale": "Payment declined by issuer bank, likely due to temporary insufficient funds or block. After two attempts, a short wait and retry is appropriate. SMS nudges user to ensure wallet balance is sufficient.",
+"recovery_class": "retry_later_funds"
+}
+},
 "aab6a28e353266562ea7ae36728bb228": {
 "model": "gpt-oss:120b",
 "value": {
@@ -13959,6 +14157,17 @@
 "recovery_class": "hard_stop"
 }
 },
+"b09466a576f694fa129e6517d8f05172": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.92,
+"delay_hours": 0.5,
+"rationale": "PIN attempts exceeded indicates user entered wrong PIN. No system downtime. Prompt the customer to retry the UPI payment after resetting/trying correct PIN. A gentle nudge via WhatsApp within 30\u202fmin maximizes chance of quick recovery.",
+"recovery_class": "nudge_customer"
+}
+},
 "b0db1d61aaf6aadaa83227fce975b311": {
 "model": "gpt-oss:120b",
 "value": {
@@ -13990,6 +14199,17 @@
 "delay_hours": 24.0,
 "rationale": "Failure is due to insufficient funds. Customer has prior success and low message volume. A gentle reminder to add funds and retry after a day maximizes recovery without over\u2011messaging.",
 "recovery_class": "retry_later_funds"
+}
+},
+"b1495fdbc31ec4adb0113859e7e48ea1": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.78,
+"delay_hours": 2.0,
+"rationale": "The payment was cancelled by the customer, indicating intent to stop. As a valued repeat payer, a gentle reminder via WhatsApp can encourage them to retry or choose another method, maximizing chance of recovery without being intrusive.",
+"recovery_class": "nudge_customer"
 }
 },
 "b1516c73ce46c298d9c4a5f9ca4ee32b": {
@@ -14487,6 +14707,17 @@
 "recovery_class": "switch_rail"
 }
 },
+"b7e3c9d438a952fc0d7f40805fb431f6": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.85,
+"delay_hours": 0.25,
+"rationale": "Gateway reported high traffic causing a transient decline. No indication of insufficient funds or issuer issue. Immediate retry after a short back\u2011off (15\u202fmin) is likely to succeed and recovers revenue without bothering the customer.",
+"recovery_class": "retry_same"
+}
+},
 "b8099b37b80e72ccc676197c4a046951": {
 "model": "gpt-oss:120b",
 "value": {
@@ -14738,6 +14969,17 @@
 "delay_hours": 0.5,
 "rationale": "payment_failed maps to retry_same; likely a transient bank/gateway issue with no other failures, so a silent retry after a short wait is appropriate.",
 "recovery_class": "retry_same"
+}
+},
+"ba93ffd30f30b568e4415f1b9f89117c": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.93,
+"delay_hours": 0.0,
+"rationale": "Funds are blocked by an existing UPI mandate. User must unblock or use a different payment method. Nudge them now via WhatsApp to check GPAY or try another UPI/app.",
+"recovery_class": "nudge_customer"
 }
 },
 "bad8e98ccd8d39dacea6723049a82bf9": {
@@ -15772,6 +16014,17 @@
 "delay_hours": 0.5,
 "rationale": "Failure due to invalid VPA is a user entry error; auto\u2011retry won't succeed. Prompt the customer to correct the VPA via a friendly WhatsApp reminder, giving them time to respond before retrying.",
 "recovery_class": "nudge_customer"
+}
+},
+"c8786fce73dfaedc26d2032b4fbf7dfc": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.85,
+"delay_hours": 12.0,
+"rationale": "Transaction failed due to daily UPI limit exceeded. After 24h the limit may reset; retry after a short wait without another customer nudge.",
+"recovery_class": "retry_later_funds"
 }
 },
 "c8a9055433e4b9719288d5d58f8bacee": {
@@ -18689,6 +18942,17 @@
 "recovery_class": "nudge_customer"
 }
 },
+"f0933f356e181c0d714940d428b6c6fe": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "retry",
+"channel": null,
+"confidence": 0.78,
+"delay_hours": 1.5,
+"rationale": "The card payment was declined by PNB, likely due to temporary issues such as insufficient funds or a momentary auth failure. No downtime or pattern of declines observed. A short-delay retry maximizes chance of recovery without customer friction.",
+"recovery_class": "retry_later_funds"
+}
+},
 "f0a8fb52c9b894581262b37885129e54": {
 "model": "gpt-oss:120b",
 "value": {
@@ -18698,6 +18962,17 @@
 "delay_hours": 1.0,
 "rationale": "Card is blocked; further retries will fail. Advise customer to use a different payment method (e.g., another card, netbanking, or UPI). Immediate switch minimizes churn.",
 "recovery_class": "switch_rail"
+}
+},
+"f0b8477c76848f7e6a8186bca65bfb2d": {
+"model": "gpt-oss:120b",
+"value": {
+"action": "nudge",
+"channel": "whatsapp",
+"confidence": 0.78,
+"delay_hours": 1.0,
+"rationale": "Authentication failure can be resolved by the customer re\u2011trying the 3D\u2011secure/OTP step. A gentle reminder after 1\u202fhour encourages completion without being intrusive.",
+"recovery_class": "retry_same"
 }
 },
 "f0c99f87d1c4e576eadfb55241ef3767": {

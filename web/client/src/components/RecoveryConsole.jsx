@@ -110,7 +110,7 @@ function Step({ step, last }) {
   );
 }
 
-function PaymentCard({ p, open, onToggle }) {
+function PaymentCard({ p, open, onToggle, model }) {
   const meta = STATE_META[p.state] || STATE_META.stopped;
   return (
     <div className="work-item" data-state={p.state}>
@@ -151,7 +151,7 @@ function PaymentCard({ p, open, onToggle }) {
 
             {p.rationale && (
               <div className="work-rationale">
-                <span className="audit-k">Agent</span>
+                <span className="audit-k">{model || "Model"}</span>
                 <span>{p.rationale}</span>
               </div>
             )}
@@ -189,7 +189,7 @@ function PaymentCard({ p, open, onToggle }) {
 
 const PAGE = 20;
 
-export default function RecoveryConsole({ workflow, ledger }) {
+export default function RecoveryConsole({ workflow, ledger, model }) {
   const [state, setState] = useState("needs_human");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState(null);
@@ -312,11 +312,24 @@ export default function RecoveryConsole({ workflow, ledger }) {
             vetoed on the way.
           </p>
           <p className="note">
+            The <strong>diagnosis and the reasoning on every row below are produced by{" "}
+            {model ? <code>{model}</code> : "a language model"}</strong>, one call per
+            payment — not by a lookup table. Expand any row to read what it decided and
+            why, in its own words, and where the policy layer overruled it.
+          </p>
+          <p className="note">
             Revenue leaks in more than one way, so this batch does too:{" "}
             <strong>{mix.subs}</strong> of {mix.total} are failed{" "}
             <strong>subscription debits</strong> on e-mandate, and{" "}
             <strong>{mix.nudge}</strong> are checkout drop-offs the agent judged worth a
             nudge rather than a retry. Overdue invoices are not modelled at all.
+          </p>
+          <p className="note">
+            These payments are <strong>simulated</strong>, not live Razorpay traffic —
+            generated from 66 error reasons transcribed verbatim from Razorpay's public
+            docs, with decline rates derived from NPCI's published ceilings. That is what
+            makes a controlled comparison possible: five policies can face the identical
+            batch with identical luck, which live traffic can never give you.
           </p>
         </div>
 
@@ -362,6 +375,7 @@ export default function RecoveryConsole({ workflow, ledger }) {
                 <PaymentCard
                   key={p.payment_id}
                   p={p}
+                  model={model}
                   open={openId === p.payment_id}
                   onToggle={() =>
                     setOpenId((id) => (id === p.payment_id ? null : p.payment_id))
