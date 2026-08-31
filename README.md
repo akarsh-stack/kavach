@@ -36,6 +36,20 @@ cost of trying**.
 | an audit trail | [`agent/audit.py`](agent/audit.py) — records what was **prevented**, not just what ran |
 | measured money recovered | 5 policies, same batch, same seed, same luck |
 
+The brief also names four ways revenue leaks. Here is what this batch actually
+contains, and what it does not — the last row is a gap, not a claim:
+
+| *"Revenue loss rarely happens in one clean step…"* | In this batch |
+|---|---|
+| a payment degrades | **150 / 150.** All 66 transcribed Razorpay reasons are in play |
+| a subscription fails | **48 / 150** are subscription debits on `emandate` — mandate declines, insufficient funds on an autopay date, `funds_blocked_by_mandate` |
+| a checkout gets abandoned | **partial.** 12 reasons route to `nudge_customer`, including `payment_cancelled`, `payment_timed_out` and `authentication_failed` — a customer who walked away from a 3DS screen. Modelled as failures that carry an error code, not as silent drop-off where no code exists |
+| an invoice goes overdue | **not modelled.** No receivables, no promise-to-pay, no dunning ladder |
+
+Scope was chosen rather than maximised: one direction done to a measurable
+standard beats four sketched. The consequence is the last row, and it is stated
+here rather than left for a reviewer to find.
+
 ---
 
 ## Two surfaces

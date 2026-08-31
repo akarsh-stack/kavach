@@ -72,34 +72,66 @@ export async function waitForApi(fn, { tries = 12, gap = 400 } = {}) {
 let staticMode = false;
 export const isStaticMode = () => staticMode;
 
-/** Try the API; on a genuine "nothing is listening", read the staged file. */
-const withStatic = async (apiPath, staticPath) => {
+/**
+ * Try the API; on a genuine "nothing useful is listening", read the staged file.
+ *
+ * `looksRight` exists because "an API answered" is not the same as "our API
+ * answered". A dev proxy points at a fixed port, and if any other process holds
+ * it, its JSON arrives here with a healthy status and the wrong shape entirely.
+ * That happened: an unrelated embeddings service on 5174 returned
+ * `{status, redis, embeddings}` and the dashboard rendered nothing, with a bare
+ * 404 as the only clue. Checking for the field we actually need turns that into
+ * a clean fall back to the published data.
+ */
+const withStatic = async (apiPath, staticPath, looksRight) => {
   if (staticMode) return j(staticPath);
   try {
-    return await j(apiPath);
-  } catch (e) {
-    if (!(e instanceof Unreachable)) throw e;
-    const data = await j(staticPath);
-    staticMode = true;
+    const data = await j(apiPath);
+    if (looksRight && !looksRight(data)) {
+      throw new Unreachable(`${apiPath} answered, but not with our data`);
+    }
     return data;
+  } catch (apiErr) {
+    // Fall back on ANY failure, not on an enumerated list of statuses. Earlier
+    // versions of this file guessed twice and were wrong twice: 502 for a dead
+    // Vite proxy (it is 500), then 5xx for a port conflict (a stranger on the
+    // port answered 404 with a perfectly valid JSON body). The question worth
+    // asking is not "which failure was it" but "can the staged copy answer".
+    try {
+      const data = await j(staticPath);
+      staticMode = true;
+      return data;
+    } catch {
+      // No API and no staged data — report the original problem, which is the
+      // more useful of the two.
+      throw apiErr;
+    }
   }
 };
 
 export const getRun = (name = "latest") =>
   // `latest` only exists where runs happen. A static deployment has exactly
   // one run — the published one — so both names resolve to it.
-  withStatic(`/api/run/${name}`, "/data/reference.json");
+  withStatic(`/api/run/${name}`, "/data/reference.json", (d) =>
+    Array.isArray(d?.policies),
+  );
 
-export const getSensitivity = () => withStatic("/api/sensitivity", "/data/sensitivity.json");
+export const getSensitivity = () =>
+  withStatic("/api/sensitivity", "/data/sensitivity.json", (d) =>
+    Array.isArray(d?.points),
+  );
 
 export const listRuns = () => j("/api/runs");
 
 export const getCapabilities = async () => {
   if (!staticMode) {
     try {
-      return await j("/api/capabilities");
-    } catch (e) {
-      if (!(e instanceof Unreachable)) throw e;
+      const caps = await j("/api/capabilities");
+      if (Array.isArray(caps?.engines)) return caps;
+      staticMode = true; // something is on the port, but it is not us
+    } catch {
+      // Any failure at all. If we cannot read capabilities we cannot drive the
+      // API regardless of why, so there is nothing to gain from distinguishing.
       staticMode = true;
     }
   }

@@ -229,6 +229,17 @@ export default function RecoveryConsole({ workflow, ledger }) {
     [workflow],
   );
 
+  // What kind of revenue leak this batch actually contains. A third of it is
+  // failed subscription debits and nothing on screen said so, which meant a
+  // reader holding the brief's "a subscription fails" next to this dashboard
+  // had no way to tell it was covered.
+  const mix = useMemo(() => {
+    const ps = workflow?.payments || [];
+    const subs = ps.filter((p) => p.is_subscription).length;
+    const nudge = ps.filter((p) => p.diagnosis === "nudge_customer").length;
+    return { total: ps.length, subs, nudge };
+  }, [workflow]);
+
   if (!workflow) return <Empty>No recovery run loaded yet.</Empty>;
   const t = workflow.totals;
 
@@ -299,6 +310,13 @@ export default function RecoveryConsole({ workflow, ledger }) {
             first. Expand one to see the bounded workflow it executed: what it
             diagnosed, why, and every action the policy layer allowed, deferred or
             vetoed on the way.
+          </p>
+          <p className="note">
+            Revenue leaks in more than one way, so this batch does too:{" "}
+            <strong>{mix.subs}</strong> of {mix.total} are failed{" "}
+            <strong>subscription debits</strong> on e-mandate, and{" "}
+            <strong>{mix.nudge}</strong> are checkout drop-offs the agent judged worth a
+            nudge rather than a retry. Overdue invoices are not modelled at all.
           </p>
         </div>
 

@@ -288,8 +288,28 @@ app.get("/api/job", (_req, res) => {
   res.json({ running: Boolean(job), args: job?.args ?? null });
 });
 
-app.listen(PORT, () => {
-  console.log(`recovery-agent api  http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`kavach api  http://localhost:${PORT}`);
   console.log(`  repo  ${REPO}`);
   console.log(`  runs  ${RUNS}`);
+});
+
+// Without this, a taken port is an unhandled 'error' event: the API dies while
+// `concurrently` keeps the UI up, so the dashboard looks fine and every panel
+// quietly fails. Worse, if something ELSE is already serving this port, Vite
+// proxies to it happily and the client receives a stranger's JSON.
+//
+// Observed for real: an unrelated embeddings service was holding 5174 and the
+// dashboard rendered nothing with only a 404 in the console to go on.
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`\n  Port ${PORT} is already in use.`);
+    console.error("  Something else is listening there — check with:");
+    console.error(`    curl http://localhost:${PORT}/api/health`);
+    console.error("\n  If that answers with anything other than this API, either stop it");
+    console.error(`  or run on another port:  API_PORT=5185 npm run dev`);
+    console.error("  (and point web/client/vite.config.js at the same port)\n");
+    process.exit(1);
+  }
+  throw err;
 });
