@@ -14,7 +14,7 @@ cd web && npm run install:all && npm run dev                           # :5173
 ```
 
 **No API key needed for any of it.** When no backend is reachable the client
-*replays* the committed decision cache — 1,688 recorded decisions from
+*replays* the committed decision cache — 1,988 recorded decisions from
 `gpt-oss:120b`, temperature 0. Verified on a fresh clone with no `.env`:
 0 live calls, agent ₹40,849, and the 36-point sensitivity sweep regenerates
 byte-identical apart from its timestamp.
@@ -98,8 +98,8 @@ Any one is enough. Copy `.env.example` to `.env`.
 
 | Provider | Free? | Notes |
 |---|---|---|
-| Gemini | yes, generous | `GEMINI_API_KEY` — aistudio.google.com/apikey |
-| Groq | yes, per-minute limits | `GROQ_API_KEY` — console.groq.com/keys |
+| Gemini | yes, generous per day | `GEMINI_API_KEY` — aistudio.google.com/apikey. Default `gemini-3.5-flash`; Google retires these fast, and the model *listing* advertises ones the API then refuses with "no longer available to new users". Verify by calling, not by listing. |
+| Groq | yes, but 8,000 tokens/min | `GROQ_API_KEY` — console.groq.com/keys. ~5 decisions/min with a 1,575-token system prompt, so a 150-payment run is ~3.4 hours. Fine for recording batches, useless for a full evaluation. Needs a real User-Agent or Cloudflare answers 403. |
 | Ollama Cloud | ~1,500 decisions per window | produced the committed run |
 | Anthropic | paid | path built, never executed |
 
@@ -111,8 +111,12 @@ degrading every decision to `stop`.
 
 **Blocking:**
 
-- [ ] **Push to a public GitHub repo.** Form item 10 asks for the URL. 48
-      commits, currently local only — no remote configured.
+- [x] ~~**Push to a public GitHub repo.**~~ Done —
+      **https://github.com/akarsh-stack/kavach**, public. Verified by cloning
+      from GitHub with every credential stripped: 0 live calls, agent ₹40,849,
+      64 tests.
+- [ ] **Deploy the dashboard.** The repo is Vercel-ready (`vercel.json`, static
+      build stages the artefacts). A judge clicks a link; a judge does not clone.
 - [ ] **Record the video.** Script and harness ready — `docs/VIDEO.md`,
       `python scripts/demo.py`. No beat needs a model or a key:
       beats 5 and 6 replay the committed cache.
@@ -151,6 +155,22 @@ degrading every decision to `stop`.
   multi-line strings this way. Use the editor for anything containing escapes.
 - **`tests/test_imports.py` exists** because a dataclass field-ordering bug
   survived a full test run — nothing imported `agent/audit.py`. Keep it.
+- **The API port is 5185, and something else may already have it.** It was 5174
+  until an unrelated service on the dev machine took that port: Express never
+  bound, `concurrently` kept the UI alive, and the dashboard silently fell into
+  its backend-less mode and hid the run controls. It looked exactly like a
+  deleted feature. `app.listen` now reports EADDRINUSE and exits; the Vite proxy
+  follows `API_PORT` so there is only one copy of the number.
+- **Provider model names rot, and the model LISTING lies.** Google's
+  `models?key=` advertises models the API then refuses with "no longer available
+  to new users" — that killed `gemini-2.0-flash` and `gemini-2.5-flash` in turn.
+  Verify a default by calling it, never by listing.
+- **urllib's default User-Agent is banned by Groq's edge** (Cloudflare 1010),
+  surfacing as an HTTP 403 indistinguishable from a bad key.
+- **"Upgrade" appears in transient rate-limit messages.** Groq's per-minute
+  ceiling says "try again in 660ms" and then advertises its paid tier; matching
+  the upsell classified a sub-second wait as a permanently exhausted quota and
+  killed a live run. Transient hints are now checked *before* quota hints.
 - **`make clean` used to delete the published evidence.** `rm -rf
   data/runs/*.json` takes out `reference.json` and `sensitivity.json`, both of
   which are committed and both of which the dashboard reads by default. Only

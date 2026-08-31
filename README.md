@@ -92,6 +92,29 @@ running naive_llm  net Rs -34,119  (0 live calls, disk cache 100%)
 To run live instead, copy `.env.example` to `.env` and fill in **any one** of
 `GEMINI_API_KEY`, `GROQ_API_KEY`, `OLLAMA_API_KEY` or `ANTHROPIC_API_KEY`.
 
+### If you plan to run live, read this first
+
+The system prompt is **~1,575 tokens and is sent on every decision**, and a
+`--limit 150` run needs roughly **1,050 model calls** — 150 for the agent plus
+~900 for `naive_llm`, which by design never stops retrying. That makes the
+free tiers very different in practice:
+
+| Provider | Free-tier ceiling | A full 150-payment run |
+|---|---|---|
+| **Ollama Cloud** | ~1,500 decisions per window | **Yes** — this produced the committed numbers |
+| **Groq** | 8,000 tokens/min → **~5 decisions/min** | **No.** ~3.4 hours, and that assumes nothing else competes |
+| **Gemini** | generous per-day, low per-minute | partial; fine for recording in batches |
+| **Anthropic** | paid | yes, with credit |
+
+Groq is genuinely fast per call — about **1 second** — but the per-minute token
+ceiling, not latency, is the binding constraint. It is a good way to *record* a
+few hundred decisions into the cache, and a bad way to run a whole evaluation.
+Measured, not assumed: two concurrent Groq runs on this tier completed **zero**
+decisions in 60 seconds, each backing off for the other.
+
+**Use `--engine replay` unless you specifically want new decisions.** It
+reproduces the published numbers in about a second and costs nothing.
+
 ---
 
 ## The result
