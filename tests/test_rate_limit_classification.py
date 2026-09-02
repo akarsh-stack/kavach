@@ -21,7 +21,13 @@ The bodies below are copied from real responses, not invented.
 
 from __future__ import annotations
 
-from agent.llm_http import _QUOTA_HINTS, _TRANSIENT_HINTS, _normalise, _retry_delay
+from agent.llm_http import (
+    _DAILY_HINTS,
+    _QUOTA_HINTS,
+    _TRANSIENT_HINTS,
+    _normalise,
+    _retry_delay,
+)
 
 GEMINI_PER_MINUTE = (
     '{"error":{"code":429,"message":"You exceeded your current quota, please check your '
@@ -44,10 +50,54 @@ REAL_EXHAUSTION = (
 )
 
 
+# Gemini answers a per-DAY exhaustion with a ~30s retryDelay. Taken at face
+# value that is a lie: you may retry in 30s and be refused until midnight. The
+# body is otherwise near-identical to the per-minute one, and the only thing
+# separating them is the quota metric name.
+GEMINI_PER_DAY = (
+    '{"error":{"code":429,"message":"You exceeded your current quota, please check your '
+    'plan and billing details. For more information on this error, head to: '
+    'https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, '
+    'head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: '
+    'generate_requests_per_model_per_day","status":"RESOURCE_EXHAUSTED","details":'
+    '[{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"31s"}]}}'
+)
+
+
+def _is_daily(detail: str) -> bool:
+    return any(h in _normalise(detail) for h in _DAILY_HINTS)
+
+
 def _is_transient(detail: str, headers=None) -> bool:
+    if _is_daily(detail):
+        return False
     return _retry_delay(detail, headers) is not None or any(
         h in _normalise(detail) for h in _TRANSIENT_HINTS
     )
+
+
+def test_gemini_per_day_is_fatal_despite_a_stated_delay() -> None:
+    """The retryDelay is present and small; the metric name is what matters."""
+    assert _retry_delay(GEMINI_PER_DAY, None) == 31.0
+    assert _is_daily(GEMINI_PER_DAY)
+    assert not _is_transient(GEMINI_PER_DAY)
+
+
+def test_per_day_and_per_minute_are_told_apart() -> None:
+    assert _is_transient(GEMINI_PER_MINUTE)
+    assert not _is_transient(GEMINI_PER_DAY)
+
+
+def test_retry_info_survives_display_truncation() -> None:
+    """Classification reads the whole body; only the message shown is clipped.
+
+    retryDelay sits at roughly character 450 of Gemini's response, behind the
+    prose and two documentation links. Parsing a 300-character copy -- which is
+    what the error message displays -- loses the one field that decides this.
+    """
+    assert GEMINI_PER_DAY.find("retryDelay") > 300
+    assert _retry_delay(GEMINI_PER_DAY[:300], None) is None
+    assert _retry_delay(GEMINI_PER_DAY, None) == 31.0
 
 
 def test_gemini_per_minute_is_transient() -> None:

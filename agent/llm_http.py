@@ -54,6 +54,14 @@ _TRANSIENT_HINTS = (
 )
 
 
+# Markers that a limit is a DAILY allowance rather than back-pressure. These
+# outrank a stated retryDelay: Gemini reports a per-day exhaustion with a
+# retryDelay of about 30 seconds, which is true only in the sense that you may
+# retry then and be refused again until midnight. Matched normalised, so
+# `generate_requests_per_model_per_day` and "per day" both hit.
+_DAILY_HINTS = ("perday", "daily", "perdayperproject", "requestsperday")
+
+
 def _normalise(detail: str) -> str:
     """Lowercase, alphanumerics only. See _TRANSIENT_HINTS."""
     return "".join(c for c in detail.lower() if c.isalnum())
@@ -142,27 +150,39 @@ class _HttpClient(LLMClient):
                 with urllib.request.urlopen(req, timeout=self.timeout_s) as r:
                     data = json.loads(r.read())
             except urllib.error.HTTPError as exc:
-                detail = ""
+                raw = ""
                 try:
-                    detail = exc.read().decode("utf-8", "replace")[:300]
+                    raw = exc.read().decode("utf-8", "replace")
                 except Exception:
                     pass
-                low = detail.lower()
-                flat = _normalise(detail)
+                # Classify on the WHOLE body; truncate only for display. Gemini
+                # puts its RetryInfo in a `details` array at the end, past 400
+                # characters of prose and documentation links, so reading a
+                # clipped copy meant the one field that settles the question was
+                # never in the string being searched.
+                detail = raw[:300]
+                low = raw.lower()
+                flat = _normalise(raw)
                 self._record(retries=1)
 
-                # A stated delay settles it. Everything else is guesswork about
-                # someone else's wording.
-                delay = _retry_delay(detail, exc.headers)
-                transient = delay is not None or any(h in flat for h in _TRANSIENT_HINTS)
+                # A stated delay settles it, UNLESS the limit is a daily one --
+                # Gemini answers a per-day exhaustion with a ~30s retryDelay,
+                # which is only true in the sense that you may retry then and be
+                # refused again until midnight.
+                daily = any(h in flat for h in _DAILY_HINTS)
+                delay = _retry_delay(raw, exc.headers)
+                transient = not daily and (
+                    delay is not None or any(h in flat for h in _TRANSIENT_HINTS)
+                )
 
                 if (
                     exc.code in (429, 402, 403)
                     and not transient
-                    and any(h in low for h in _QUOTA_HINTS)
+                    and (daily or any(h in low for h in _QUOTA_HINTS))
                 ):
+                    scope = "daily allowance spent" if daily else "quota exhausted"
                     raise LLMQuotaExhausted(
-                        f"{self.engine} quota exhausted -- waiting will not help. {detail}"
+                        f"{self.engine} {scope} -- waiting will not help. {detail}"
                     ) from exc
                 if exc.code in (408, 429, 500, 502, 503, 504) or transient:
                     # Honour the provider's own figure over our backoff curve:
@@ -211,12 +231,22 @@ class GeminiClient(_HttpClient):
     """Google AI Studio. Generous free tier, no card required."""
 
     engine = "gemini"
-    # Verified against a live key by calling each candidate, not by reading the
-    # model list. `models?key=` happily advertises models it then refuses with
-    # "no longer available to new users" -- 2.0-flash and 2.5-flash both 404ed
-    # that way. Google retires these faster than a README gets updated, so if
-    # this 404s, run scripts/smoke_llm.py or list the models and pick a live one.
-    DEFAULT_MODEL = "gemini-3.5-flash"
+    # Verified against a live key by calling each candidate AND by exhausting
+    # it, because availability and usability are different questions.
+    #
+    #   models?key=            advertises models the API then refuses with "no
+    #                          longer available to new users" -- 2.0-flash and
+    #                          2.5-flash both 404ed that way
+    #   gemini-3.5-flash       answers, then caps at 20 requests PER DAY on the
+    #                          free tier. Fine for a smoke test, useless for a
+    #                          run that needs several hundred decisions
+    #   gemini-3.1-flash-lite  caps at 15 per MINUTE, which is back-pressure
+    #                          rather than a wall: ~900/hour, and the client
+    #                          backs off and continues
+    #
+    # So the lite model is the default despite being the weaker one. A model
+    # that finishes beats a better model that stops at twenty.
+    DEFAULT_MODEL = "gemini-3.1-flash-lite"
 
     def __init__(self, model: str | None = None, api_key: str | None = None, **kw) -> None:
         super().__init__(model or self.DEFAULT_MODEL, **kw)
