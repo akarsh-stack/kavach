@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -36,23 +37,54 @@ _USER_AGENT = "kavach/1.0 (+https://github.com/akarsh-stack/kavach)"
 
 # Phrases that mean "waiting WILL help", checked before the quota hints below.
 #
-# Groq's per-minute token limit is a textbook case: the body says "Rate limit
-# reached ... tokens per minute (TPM) ... Please try again in 659ms" and then
-# appends an upsell. That upsell contains "upgrade", which matched _QUOTA_HINTS
-# and killed a live run dead over a limit that clears in under a second.
-#
-# A provider telling you when to come back is the strongest possible signal
-# that the failure is temporary, so it outranks every other hint.
+# Matched against a NORMALISED body -- lowercased with non-alphanumerics
+# stripped -- because providers spell the same concept differently and prose
+# matching kept failing on the punctuation. Groq writes "tokens per minute";
+# Gemini writes "GenerateRequestsPerMinutePerProjectPerModel". Only the
+# normalised form catches both, so these are written without spaces.
 _TRANSIENT_HINTS = (
-    "try again in",
-    "please retry",
-    "retry after",
-    "per minute",
-    "tokens per minute",
-    "requests per minute",
-    "rate limit reached",
+    "tryagainin",
+    "pleaseretry",
+    "retryafter",
+    "retrydelay",
+    "perminute",
+    "ratelimitreached",
     "temporarily",
+    "quotafailure",
 )
+
+
+def _normalise(detail: str) -> str:
+    """Lowercase, alphanumerics only. See _TRANSIENT_HINTS."""
+    return "".join(c for c in detail.lower() if c.isalnum())
+
+
+def _retry_delay(detail: str, headers) -> float | None:
+    """How long the provider says to wait, in seconds, if it says at all.
+
+    This outranks every phrase match. A provider that names a delay is stating
+    outright that the condition is temporary, whatever else the body says --
+    and both providers bury an upsell in the same response, which is what kept
+    getting these classified as permanently exhausted.
+
+      Groq    "Please try again in 659.999999ms"  /  "in 2.5s"
+      Gemini  {"@type": "...RetryInfo", "retryDelay": "25s"}
+      HTTP    Retry-After: 30
+    """
+    hdr = headers.get("retry-after") if headers else None
+    if hdr:
+        try:
+            return float(hdr)
+        except ValueError:
+            pass
+
+    m = re.search(r'"retrydelay"\s*:\s*"?([\d.]+)\s*(ms|s)?', detail, re.I)
+    if not m:
+        m = re.search(r"try again in\s+([\d.]+)\s*(ms|s)?", detail, re.I)
+    if m:
+        value = float(m.group(1))
+        return value / 1000.0 if (m.group(2) or "s").lower() == "ms" else value
+    return None
 
 # Quota-style refusals that waiting will never clear. Distinguishing these from
 # transient back-pressure matters: a failed decision defaults to `stop`, so
@@ -116,8 +148,14 @@ class _HttpClient(LLMClient):
                 except Exception:
                     pass
                 low = detail.lower()
+                flat = _normalise(detail)
                 self._record(retries=1)
-                transient = any(h in low for h in _TRANSIENT_HINTS)
+
+                # A stated delay settles it. Everything else is guesswork about
+                # someone else's wording.
+                delay = _retry_delay(detail, exc.headers)
+                transient = delay is not None or any(h in flat for h in _TRANSIENT_HINTS)
+
                 if (
                     exc.code in (429, 402, 403)
                     and not transient
@@ -126,17 +164,20 @@ class _HttpClient(LLMClient):
                     raise LLMQuotaExhausted(
                         f"{self.engine} quota exhausted -- waiting will not help. {detail}"
                     ) from exc
-                if exc.code in (408, 429, 500, 502, 503, 504):
-                    # Prefer the provider's own Retry-After over our backoff
-                    # curve: it knows when the window rolls and we are guessing.
+                if exc.code in (408, 429, 500, 502, 503, 504) or transient:
+                    # Honour the provider's own figure over our backoff curve:
+                    # it knows when its window rolls and we are guessing. Capped,
+                    # because a per-day limit can report a delay in hours and we
+                    # would rather fail the run than hang on one.
                     wait = self.backoff_base * (2**attempt)
-                    hdr = exc.headers.get("retry-after") if exc.headers else None
-                    if hdr:
-                        try:
-                            wait = max(wait, float(hdr))
-                        except ValueError:
-                            pass
-                    time.sleep(min(wait, 30.0))
+                    if delay is not None:
+                        wait = max(wait, delay + 0.5)
+                    if wait > 90.0:
+                        raise LLMQuotaExhausted(
+                            f"{self.engine} asked for a {wait:.0f}s wait -- that is a daily "
+                            f"limit, not back-pressure. {detail}"
+                        ) from exc
+                    time.sleep(wait)
                     last = exc
                     continue
                 raise LLMUnavailable(f"{self.engine} HTTP {exc.code}: {detail}") from exc
