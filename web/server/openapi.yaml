@@ -1,0 +1,207 @@
+openapi: 3.1.0
+info:
+  title: Kavach API
+  version: "1.0.0"
+  description: |
+    Serves recorded evaluation artefacts and runs the Python pipeline that
+    produces them.
+
+    **The server owns no analysis.** It reads JSON that `scripts/run_eval.py`
+    wrote and shells out to the same script to write more. There is deliberately
+    no second implementation of any metric, because two implementations of the
+    same number drift and then you have to work out which one is lying.
+
+    ### Errors
+    Every failure is `application/problem+json` (RFC 7807) with a stable `type`.
+    Branch on `type`, never on prose and never on status alone — this client has
+    twice been broken by a status code that meant two different things depending
+    on which proxy answered.
+
+    ### Starting versus observing
+    `POST /evaluate` starts a run. `GET /stream` observes one. They are separate
+    on purpose: `EventSource` speaks only GET and reconnects on every blip, so a
+    GET with a spawn behind it re-runs the job. That shipped twice here.
+servers:
+  - url: http://localhost:5185/api
+    description: local development
+
+paths:
+  /health:
+    get:
+      summary: Liveness
+      description: |
+        Is the process wedged? Depends on nothing external, so a downstream
+        outage cannot turn into a restart loop.
+      responses:
+        "200":
+          description: Process is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: ok }
+                  uptimeS: { type: number }
+                  pid: { type: integer }
+                  node: { type: string }
+
+  /ready:
+    get:
+      summary: Readiness
+      description: |
+        Can this instance serve traffic now? Fails if the committed run artefact
+        is unreadable — the failure mode that leaves every panel empty while the
+        process looks perfectly healthy.
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready; take out of the pool, do not restart }
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      description: |
+        Route labels use the matched pattern, never the raw path. Labelling
+        `/api/run/reference` separately from `/api/run/latest` is how a metrics
+        backend gets a cardinality explosion.
+      responses:
+        "200":
+          description: Prometheus text exposition format
+          content:
+            text/plain: { schema: { type: string } }
+
+  /info:
+    get:
+      summary: Build and path information
+      responses:
+        "200": { description: OK }
+
+  /capabilities:
+    get:
+      summary: Which engines this machine can actually run
+      description: |
+        The UI used to offer every engine unconditionally. Choosing one without
+        a key fell through to replay, and replay only covers the recorded batch
+        size — so "Groq at 300 payments" produced a Python traceback in the log
+        pane. A judge clicking a dropdown must not be able to reach that.
+      responses:
+        "200": { description: OK }
+
+  /runs:
+    get:
+      summary: List artefacts on disk
+      responses:
+        "200": { description: OK }
+
+  /run/{name}:
+    get:
+      summary: Fetch one run artefact
+      description: |
+        Supports conditional GET. `reference.json` is 2.2 MB and is fetched on
+        every page load; an `If-None-Match` that matches returns 304 with no
+        body. `latest` falls back to `reference`, so a fresh clone shows real
+        numbers rather than an error.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[a-zA-Z0-9_-]{1,64}$" }
+        - name: If-None-Match
+          in: header
+          schema: { type: string }
+      responses:
+        "200": { description: The artefact }
+        "304": { description: Unchanged; body omitted }
+        "404":
+          description: No such run
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /sensitivity:
+    get:
+      summary: The 36-point sensitivity grid
+      responses:
+        "200": { description: OK }
+        "404": { description: Not generated yet }
+
+  /evaluate:
+    post:
+      summary: Start an evaluation run
+      description: |
+        Rate limited by token bucket. One run at a time — it writes
+        `latest.json` and burns provider quota, so a second concurrent run would
+        race on the file and halve its own rate limit. Refused with 409 rather
+        than queued: a queue would let a judge click twice and wait twice for
+        the same answer.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 5000, default: 300 }
+        - name: seed
+          in: query
+          schema: { type: integer, minimum: 0, default: 42 }
+        - name: engine
+          in: query
+          schema:
+            type: string
+            enum: [none, ollama, gemini, groq, anthropic, stub, replay]
+            default: none
+        - name: Idempotency-Key
+          in: header
+          description: Replaying this key while the same run is active returns it instead of 409.
+          schema: { type: string }
+      responses:
+        "202": { description: Run started }
+        "200": { description: Idempotent replay of a run already in flight }
+        "400":
+          description: Invalid parameter — rejected rather than silently defaulted
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: A run is already in progress
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429":
+          description: Rate limited; carries Retry-After
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /stream:
+    get:
+      summary: Observe the current run (Server-Sent Events)
+      description: |
+        Events: `attached`, `log`, `done`, `idle`. Buffered output is replayed
+        on attach so a late subscriber sees the whole run. Comment-frame
+        heartbeats keep idle proxies from closing the stream. A client hanging
+        up never kills the run.
+      responses:
+        "200":
+          description: Event stream
+          content:
+            text/event-stream: { schema: { type: string } }
+
+  /job:
+    get:
+      summary: Current run status and recent history
+      description: |
+        Exists because an `EventSource` error is not proof a job ended — it
+        reconnects. The client polls this as a watchdog so a missed `done` frame
+        cannot leave the UI spinning forever.
+      responses:
+        "200": { description: OK }
+
+components:
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string, description: Stable machine-readable discriminator }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        requestId: { type: string, description: Matches the X-Request-Id header and the logs }
