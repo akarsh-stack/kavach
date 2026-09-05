@@ -9,6 +9,30 @@
  */
 export class Unreachable extends Error {}
 
+/**
+ * A failure the API described in RFC 7807 `application/problem+json`.
+ *
+ * Carries the server's stable `type` discriminator and the request id, so a
+ * caller can branch on the former and a user can quote the latter into a bug
+ * report and have it grepped straight out of the logs.
+ */
+export class ApiProblem extends Error {
+  constructor(problem, status) {
+    super(problem.detail || problem.title || `HTTP ${status}`);
+    this.name = "ApiProblem";
+    this.type = problem.type;
+    this.title = problem.title;
+    this.status = problem.status ?? status;
+    this.detail = problem.detail;
+    this.requestId = problem.requestId;
+    this.problem = problem;
+  }
+}
+
+/** Does this body look like it came from *our* API rather than a stranger's? */
+const isProblem = (body, contentType) =>
+  Boolean(contentType?.includes("problem+json") || (body && typeof body.type === "string"));
+
 const j = async (url) => {
   let r;
   try {
@@ -30,15 +54,18 @@ const j = async (url) => {
 
   if (!r.ok) {
     const body = await r.json().catch(() => null);
-    // Vite reports a dead proxy target as a plain 500 -- not 502, which is what
-    // this originally looked for, and why the first version of this fix did
-    // nothing. Status alone cannot separate "nothing is listening" from a real
-    // server fault. The body can: every error this API raises is JSON carrying
-    // an `error` field, and a proxy failure is not.
-    if (r.status >= 500 && !body?.error) {
-      throw new Unreachable(`API not reachable (${r.status})`);
+
+    // Distinguishing "our API failed" from "nothing is listening" cannot be a
+    // status check. Vite reports a dead proxy target as a plain 500 -- not the
+    // 502 an earlier version assumed, which is why that version did nothing at
+    // all. The body is the reliable signal: our API answers every failure in
+    // problem+json with a `type`, and a proxy or a stranger on the port does
+    // not.
+    if (!isProblem(body, kind)) {
+      if (r.status >= 500) throw new Unreachable(`API not reachable (${r.status})`);
+      throw new Error(`${r.status} ${r.statusText}`);
     }
-    throw new Error(`${r.status} ${body?.error || r.statusText}`);
+    throw new ApiProblem(body, r.status);
   }
   return r.json();
 };
@@ -169,8 +196,20 @@ export async function evaluate({ limit, seed, engine }, onLog, onDone) {
     return () => {};
   }
   if (!started.ok) {
-    const body = await started.json().catch(() => ({}));
-    onDone({ code: -1, error: body.error || started.statusText });
+    // problem+json: `detail` says what went wrong this time, `title` is the
+    // generic name for the class. Reading the old `error` field here silently
+    // fell back to a bare status line once the server moved to RFC 7807, so a
+    // refused run reported "Conflict" instead of "a run is already in
+    // progress".
+    const p = await started.json().catch(() => ({}));
+    const reason = p.detail || p.title || started.statusText;
+    const retry = p.retryAfterSeconds ? ` Try again in ${p.retryAfterSeconds}s.` : "";
+    onDone({
+      code: -1,
+      error: `${reason}${retry}`,
+      type: p.type,
+      requestId: p.requestId,
+    });
     return () => {};
   }
 

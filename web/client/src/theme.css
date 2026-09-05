@@ -1487,6 +1487,14 @@ td .muted {
   margin-left: auto;
 }
 
+.alert-ref {
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.04em;
+  color: var(--text-4);
+  white-space: nowrap;
+}
+
 .audit-trunc {
   color: var(--text-4);
 }

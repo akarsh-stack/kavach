@@ -32,6 +32,7 @@ export default function App() {
   const [sens, setSens] = useState(null);
   const [error, setError] = useState("");
   const [runError, setRunError] = useState("");
+  const [runErrorId, setRunErrorId] = useState("");
   const lines = useRef([]);
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState([]);
@@ -71,6 +72,7 @@ export default function App() {
     setRunning(true);
     setLog([]);
     setRunError("");
+    setRunErrorId("");
     setDismissed(false);
     // The completion callback closes over stale state, and the log pane is
     // collapsible and sticky -- so "exit code 2" could be the only thing a
@@ -100,6 +102,9 @@ export default function App() {
               reason ||
               `the run exited with code ${result.code}`,
           );
+          // Quotable in a bug report, and greppable straight out of the
+          // server's logs -- every line of that request carries the same id.
+          setRunErrorId(result.requestId || "");
           return;
         }
         await load("latest");
@@ -160,6 +165,12 @@ export default function App() {
             <strong>That run did not finish</strong>
             {runError.replace(/\.\s*$/, "")}. The figures below are the previous result,
             unchanged — nothing from the failed run was loaded.
+            {runErrorId && (
+              <>
+                {" "}
+                <span className="alert-ref">ref {runErrorId}</span>
+              </>
+            )}
           </div>
         </div>
       )}
